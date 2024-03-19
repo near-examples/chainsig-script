@@ -1,0 +1,23 @@
+{
+  "name": "mpc-script",
+  "version": "0.0.1",
+  "license": "MIT",
+  "author": "Matt Lockyer (https://github.com/mattlockyer)",
+  "scripts": {
+    "start": "yarn tsc && node --env-file .env ./dist/app.js "
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.29",
+    "bitcoinjs-lib": "^6.1.5",
+    "bn.js": "^5.2.1",
+    "bs58check": "^3.0.1",
+    "commander": "^12.0.0",
+    "elliptic": "^6.5.5",
+    "ethers": "^5.7.2",
+    "hash.js": "^1.1.7",
+    "keccak": "^3.0.4",
+    "near-api-js": "^3.0.4",
+    "prompts": "^2.4.2",
+    "typescript": "^5.4.2"
+  }
+}
