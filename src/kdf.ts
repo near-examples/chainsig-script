@@ -6,7 +6,10 @@ import hash from 'hash.js';
 import bs58check from 'bs58check';
 
 function najPublicKeyStrToUncompressedHexPoint(najPublicKeyStr) {
-  return '04' + Buffer.from(base_decode(najPublicKeyStr.split(':')[1])).toString('hex');
+  return (
+    '04' +
+    Buffer.from(base_decode(najPublicKeyStr.split(':')[1])).toString('hex')
+  );
 }
 
 async function sha256Hash(str) {
@@ -30,11 +33,11 @@ function sha256StringToScalarLittleEndian(hashString) {
 async function deriveChildPublicKey(
   parentUncompressedPublicKeyHex,
   signerId,
-  path = ''
+  path = '',
 ) {
   const ec = new EC('secp256k1');
   let scalar = await sha256Hash(
-    `near-mpc-recovery v0.1.0 epsilon derivation:${signerId},${path}`
+    `near-mpc-recovery v0.1.0 epsilon derivation:${signerId},${path}`,
   );
   scalar = sha256StringToScalarLittleEndian(scalar) as any;
 
@@ -50,9 +53,10 @@ async function deriveChildPublicKey(
   // Add the result to the old public key point
   const newPublicKeyPoint = oldPublicKeyPoint.add(scalarTimesG);
 
-  return '04' + (
-    newPublicKeyPoint.getX().toString('hex').padStart(64, '0') +
-    newPublicKeyPoint.getY().toString('hex').padStart(64, '0')
+  return (
+    '04' +
+    (newPublicKeyPoint.getX().toString('hex').padStart(64, '0') +
+      newPublicKeyPoint.getY().toString('hex').padStart(64, '0'))
   );
 }
 
@@ -62,7 +66,7 @@ function uncompressedHexPointToEvmAddress(uncompressedHexPoint) {
     .digest('hex');
 
   // Ethereum address is last 20 bytes of hash (40 characters), prefixed with 0x
-  return '0x' + address.substring(address.length - 40)
+  return '0x' + address.substring(address.length - 40);
 }
 
 async function uncompressedHexPointToBtcAddress(publicKeyHex, networkByte) {
@@ -71,7 +75,7 @@ async function uncompressedHexPointToBtcAddress(publicKeyHex, networkByte) {
 
   const sha256HashOutput = await crypto.subtle.digest(
     'SHA-256',
-    publicKeyBytes
+    publicKeyBytes,
   );
 
   // Step 2: RIPEMD-160 hashing on the result of SHA-256
@@ -83,7 +87,7 @@ async function uncompressedHexPointToBtcAddress(publicKeyHex, networkByte) {
   // Step 3: Adding network byte (0x00 for Bitcoin Mainnet)
   const networkByteAndRipemd160 = Buffer.concat([
     networkByte,
-    Buffer.from(ripemd160)
+    Buffer.from(ripemd160),
   ]);
 
   // Step 4: Base58Check encoding
@@ -92,25 +96,24 @@ async function uncompressedHexPointToBtcAddress(publicKeyHex, networkByte) {
   return address;
 }
 
-export async function generateAddress({
-  publicKey,
-  accountId,
-  path,
-  chain,
-}) {
+export async function generateAddress({ publicKey, accountId, path, chain }) {
   const childPublicKey = await deriveChildPublicKey(
     najPublicKeyStrToUncompressedHexPoint(publicKey),
     accountId,
     path,
-  )
-  if (!chain) chain = 'ethereum'
+  );
+  if (!chain) chain = 'ethereum';
   const chains = {
-    btc: () => uncompressedHexPointToBtcAddress(childPublicKey, Buffer.from([0x00])),
-    bitcoin: () => uncompressedHexPointToBtcAddress(childPublicKey, Buffer.from([0x6f])),
-    ethereum: () => uncompressedHexPointToEvmAddress(childPublicKey)
-  }
+    btc: () =>
+      uncompressedHexPointToBtcAddress(childPublicKey, Buffer.from([0x00])),
+    bitcoin: () =>
+      uncompressedHexPointToBtcAddress(childPublicKey, Buffer.from([0x6f])),
+    dogecoin: () =>
+      uncompressedHexPointToBtcAddress(childPublicKey, Buffer.from([0x71])),
+    ethereum: () => uncompressedHexPointToEvmAddress(childPublicKey),
+  };
   return {
     address: await chains[chain](),
     publicKey: childPublicKey,
-  }
+  };
 }

@@ -2,13 +2,16 @@ import { program } from 'commander';
 import { generateAddress } from './kdf';
 import { account, sign } from './near';
 import { chains } from './chains';
+import { fetchJson } from './utils';
 
 program
   .option('-ea')
   .option('-ba')
+  .option('-da')
   .option('-s')
   .option('-etx')
   .option('-btx')
+  .option('-dtx')
   .option('-a, --amount <char>')
   .option('-to, --to <char>');
 
@@ -23,7 +26,7 @@ const options = Object.entries(program.opts())
 
 async function main() {
   const { MPC_PUBLIC_KEY, NEAR_ACCOUNT_ID, MPC_PATH } = process.env;
-  const { ea, ba, s, etx, btx, to, amount } = options;
+  const { ea, ba, da, s, etx, btx, dtx, to, amount } = options;
 
   const genAddress = (chain) =>
     generateAddress({
@@ -39,6 +42,10 @@ async function main() {
   }
   if (ba) {
     const { address } = await genAddress('bitcoin');
+    console.log(address);
+  }
+  if (da) {
+    const { address } = await genAddress('dogecoin');
     console.log(address);
   }
   if (s) {
@@ -57,6 +64,10 @@ async function main() {
   if (btx) {
     const { address, publicKey } = await genAddress('bitcoin');
     chains.bitcoin.send({ from: address, publicKey, to, amount });
+  }
+  if (dtx) {
+    const { address, publicKey } = await genAddress('dogecoin');
+    chains.dogecoin.send({ from: address, publicKey, to, amount });
   }
 }
 

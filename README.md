@@ -22,7 +22,8 @@ MPC_PUBLIC_KEY="secp256k1:4HFcTSodRLVCGNVcGc4Mf2fwBBBxv9jxkGdiW2S2CA1y6UpVVRWKj6
 ### Command List
 
 - -ea - ethereum address
-- -ba - bitcoin address
+- -ba - bitcoin testnet address
+- -da - dogecoin testnet address
 - -s - sign sample payload using Near account
 - -etx - send ETH
 - -btx - send BTC
@@ -39,3 +40,5 @@ MPC_PUBLIC_KEY="secp256k1:4HFcTSodRLVCGNVcGc4Mf2fwBBBxv9jxkGdiW2S2CA1y6UpVVRWKj6
 [Sepolia Faucet](https://sepolia-faucet.pk910.de/)
 
 [Bitcoin Testnet Faucet](https://faucet.triangleplatform.com/bitcoin/testnet)
+
+[Dogecoin Testnet Faucet](https://shibe.technology/)

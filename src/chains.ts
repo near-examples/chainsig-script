@@ -143,6 +143,14 @@ export const chains = {
       });
       utxos = utxos.filter((utxo) => utxo.value === maxValue);
 
+      if (!utxos || !utxos.length) {
+        console.log(
+          'no utxos for address',
+          address,
+          'please fund address and try again',
+        );
+      }
+
       return getUtxos ? utxos : maxValue;
     },
     send: async ({
@@ -206,7 +214,7 @@ export const chains = {
         value: sats,
       });
 
-      const feeRate = await fetchJson(`${btcrpc}/fee-estimates`);
+      const feeRate = await fetchJson(`${bitcoinRpc}/fee-estimates`);
       const estimatedSize = utxos.length * 148 + 2 * 34 + 10;
       const fee = estimatedSize * (feeRate[6] + 3);
       console.log('btc fee', fee);
@@ -241,7 +249,7 @@ export const chains = {
 
       psbt.finalizeAllInputs();
       try {
-        const res = await fetch(`https://corsproxy.io/?${btcrpc}/tx`, {
+        const res = await fetch(`https://corsproxy.io/?${bitcoinRpc}/tx`, {
           method: 'POST',
           body: psbt.extractTransaction().toHex(),
         });
@@ -259,13 +267,64 @@ export const chains = {
       }
     },
   },
+
+  dogecoin: {
+    name: 'Dogecoin Testnet',
+    currency: 'sats',
+    explorer: 'https://blockexplorer.one/dogecoin/testnet/address/',
+    getBalance: async ({ address, getUtxos }) => {
+      const res = await fetchJson(
+        `${dogeRpc}/addresses/${address}/unspent-outputs`,
+        {
+          headers: {
+            'X-Api-Key': process.env.CRYPTO_APIS_KEY,
+          },
+        },
+      );
+      let utxos = res.data.items.map((utxo) => ({
+        ...utxo,
+        value: parseInt(utxo.amount),
+      }));
+
+      // ONLY SIGNING 1 UTXO PER TX
+      let maxValue = 0;
+      utxos.forEach((utxo) => {
+        // ONLY SIGNING THE MAX VALUE UTXO
+        if (utxo.value > maxValue) maxValue = utxo.value;
+      });
+      utxos = utxos.filter((utxo) => utxo.value === maxValue);
+
+      if (!utxos || !utxos.length) {
+        console.log(
+          'no utxos for address',
+          address,
+          'please fund address and try again',
+        );
+      }
+
+      return getUtxos ? utxos : maxValue;
+    },
+    send: async ({
+      from: address,
+      publicKey,
+      to = 'n47ZTPR31eyi5SZNMbZQngJ4wiZMxXw1bS',
+      amount = '1',
+    }) => {
+      const utxos = await chains.dogecoin.getBalance({
+        address,
+        getUtxos: true,
+      });
+      console.log(utxos);
+    },
+  },
 };
 
 // helpers
 
-const btcrpc = `https://blockstream.info/testnet/api`;
+const dogeRpc = `https://rest.cryptoapis.io/blockchain-data/dogecoin/testnet`;
+const bitcoinRpc = `https://blockstream.info/testnet/api`;
 async function fetchTransaction(transactionId): Promise<bitcoin.Transaction> {
-  const data = await fetchJson(`${btcrpc}/tx/${transactionId}`);
+  const data = await fetchJson(`${bitcoinRpc}/tx/${transactionId}`);
   const tx = new bitcoin.Transaction();
 
   tx.version = data.version;
