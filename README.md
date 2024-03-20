@@ -41,4 +41,6 @@ MPC_PUBLIC_KEY="secp256k1:4HFcTSodRLVCGNVcGc4Mf2fwBBBxv9jxkGdiW2S2CA1y6UpVVRWKj6
 
 [Bitcoin Testnet Faucet](https://faucet.triangleplatform.com/bitcoin/testnet)
 
+[Dogecoin Crypto APIs API Key](https://my.cryptoapis.io/)
+[Dogecoin Blockdaemon API Key](https://app.blockdaemon.com/ubiquity/connect)
 [Dogecoin Testnet Faucet](https://shibe.technology/)
