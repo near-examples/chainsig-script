@@ -377,11 +377,6 @@ export const chains = {
 
           const sig: any = await sign(payload, process.env.MPC_PATH);
 
-          //   const sig = {
-          //     r: 'BC59772F492301BB4203D7B339AB094123888C296D1DD38B88C6297F696C744E',
-          //     s: '334B5EB4B89A7518E350F54D8A68F77BDA97F9AC754AE3EBEF5A5DDC047F5817',
-          //   };
-
           if (!sig) return;
           return Buffer.from(sig.r + sig.s, 'hex');
         },

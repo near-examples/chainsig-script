@@ -13,6 +13,13 @@ MPC_CONTRACT_ID="multichain-testnet-2.testnet"
 MPC_PUBLIC_KEY="secp256k1:4HFcTSodRLVCGNVcGc4Mf2fwBBBxv9jxkGdiW2S2CA1y6UpVVRWKj6RX7d7TDt65k2Bj3w9FU4BGtt43ZvuhCnNt"
 ```
 
+For dogecoin testnet
+
+```
+CRYPTO_APIS_KEY=""
+BLOCKDAEMON_API_KEY=""
+```
+
 [MPC_PATH naming conventions](https://github.com/near/near-fastauth-wallet/blob/dmd/chain_sig_docs/docs/chain_signature_api.org)
 
 # Commands
@@ -27,6 +34,7 @@ MPC_PUBLIC_KEY="secp256k1:4HFcTSodRLVCGNVcGc4Mf2fwBBBxv9jxkGdiW2S2CA1y6UpVVRWKj6
 - -s - sign sample payload using Near account
 - -etx - send ETH
 - -btx - send BTC
+- -dtx - send DOGE
 
 ### Sending Options
 
@@ -42,5 +50,7 @@ MPC_PUBLIC_KEY="secp256k1:4HFcTSodRLVCGNVcGc4Mf2fwBBBxv9jxkGdiW2S2CA1y6UpVVRWKj6
 [Bitcoin Testnet Faucet](https://faucet.triangleplatform.com/bitcoin/testnet)
 
 [Dogecoin Crypto APIs API Key](https://my.cryptoapis.io/)
+
 [Dogecoin Blockdaemon API Key](https://app.blockdaemon.com/ubiquity/connect)
+
 [Dogecoin Testnet Faucet](https://shibe.technology/)
