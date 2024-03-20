@@ -3,6 +3,7 @@ import BN from 'bn.js';
 import { fetchJson } from './utils';
 import { sign } from './near';
 import * as bitcoin from 'bitcoinjs-lib';
+import coininfo from 'coininfo';
 import prompts from 'prompts';
 
 export const chains = {
@@ -164,6 +165,7 @@ export const chains = {
       const sats = parseInt(amount);
 
       const utxos = await getBalance({ address, getUtxos: true });
+
       console.log('balance', utxos[0].value, currency);
       if (utxos[0].value < sats) {
         return console.log('insufficient funds');
@@ -204,7 +206,6 @@ export const chains = {
               nonWitnessUtxo: Buffer.from(transaction.toHex(), 'hex'),
             };
           }
-
           psbt.addInput(inputOptions);
         }),
       );
@@ -270,20 +271,15 @@ export const chains = {
 
   dogecoin: {
     name: 'Dogecoin Testnet',
-    currency: 'sats',
+    currency: 'DOGE',
     explorer: 'https://blockexplorer.one/dogecoin/testnet/address/',
     getBalance: async ({ address, getUtxos }) => {
-      const res = await fetchJson(
-        `${dogeRpc}/addresses/${address}/unspent-outputs`,
-        {
-          headers: {
-            'X-Api-Key': process.env.CRYPTO_APIS_KEY,
-          },
-        },
-      );
+      const res = await dogeGet(`/addresses/${address}/unspent-outputs`);
       let utxos = res.data.items.map((utxo) => ({
         ...utxo,
-        value: parseInt(utxo.amount),
+        value: parseInt(utxo.amount) * SATS,
+        txid: utxo.transactionId,
+        vout: utxo.index,
       }));
 
       // ONLY SIGNING 1 UTXO PER TX
@@ -307,21 +303,133 @@ export const chains = {
     send: async ({
       from: address,
       publicKey,
-      to = 'n47ZTPR31eyi5SZNMbZQngJ4wiZMxXw1bS',
+      to = 'nrnmRc1cS1uTiJqYQSE3kvqeCj5FQpbDTd',
       amount = '1',
     }) => {
+      const { getBalance, explorer, currency } = chains.dogecoin;
+
       const utxos = await chains.dogecoin.getBalance({
         address,
         getUtxos: true,
       });
-      console.log(utxos);
+
+      const sats = parseInt(amount) * SATS;
+
+      console.log('balance', utxos[0].value, currency);
+      if (utxos[0].value < sats) {
+        return console.log('insufficient funds');
+      }
+      console.log('sending', amount, currency, 'from', address, 'to', to);
+      const cont = await prompts({
+        type: 'confirm',
+        name: 'value',
+        message: 'Confirm? (y or n)',
+        initial: true,
+      });
+      if (!cont.value) return;
+
+      const network = coininfo.dogecoin.test.toBitcoinJS();
+      const psbt = new bitcoin.Psbt({ network });
+      let totalInput = 0;
+
+      // ONLY SIGNING 1 UTXO PER TX
+
+      await Promise.all(
+        utxos.map(async (utxo) => {
+          totalInput += utxo.value;
+          const res = await dogeGet(`/transactions/${utxo.txid}/raw-data`);
+          const { transactionHex } = res.data.item;
+          const inputOptions = {
+            hash: utxo.txid,
+            index: utxo.vout,
+            nonWitnessUtxo: Buffer.from(transactionHex, 'hex'),
+          };
+
+          psbt.addInput(inputOptions);
+        }),
+      );
+
+      psbt.addOutput({
+        address: to,
+        value: sats,
+      });
+
+      const feeRes = await dogeGet(`/mempool/fees`);
+      const { fast, standard } = feeRes.data.item;
+      const feeRate = Math.max(parseFloat(fast), parseFloat(standard)) * SATS;
+      const estimatedSize = utxos.length * 148 + 2 * 34 + 10;
+      const fee = estimatedSize * (feeRate + 3);
+      console.log('doge fee', fee);
+      const change = totalInput - sats - fee;
+      console.log('change leftover', change);
+
+      if (change > 0) {
+        psbt.addOutput({
+          address: address,
+          value: change,
+        });
+      }
+
+      const keyPair = {
+        publicKey: Buffer.from(publicKey, 'hex'),
+        sign: async (transactionHash) => {
+          const payload = Object.values(ethers.utils.arrayify(transactionHash));
+
+          //   const sig: any = await sign(payload, process.env.MPC_PATH);
+
+          const sig = {
+            r: 'BC59772F492301BB4203D7B339AB094123888C296D1DD38B88C6297F696C744E',
+            s: '334B5EB4B89A7518E350F54D8A68F77BDA97F9AC754AE3EBEF5A5DDC047F5817',
+          };
+
+          if (!sig) return;
+          return Buffer.from(sig.r + sig.s, 'hex');
+        },
+      };
+
+      await Promise.all(
+        utxos.map(async (_, index) => {
+          try {
+            await psbt.signInputAsync(index, keyPair);
+          } catch (e) {
+            console.warn('not signed');
+          }
+        }),
+      );
+
+      psbt.finalizeAllInputs();
+
+      try {
+        const res = await dogePost('sendrawtransaction', [
+          psbt.extractTransaction().toHex(),
+        ]);
+        console.log('response', res);
+        if (res.status === 200) {
+          const hash = res.result;
+          console.log('tx hash', hash);
+          console.log('explorer link', `${explorer}/tx/${hash}`);
+          console.log(
+            'NOTE: it might take a minute for transaction to be included in mempool',
+          );
+        }
+      } catch (e) {
+        console.log('error broadcasting dogecoin tx', JSON.stringify(e));
+      }
     },
   },
 };
 
-// helpers
+// ethereum helpers
 
-const dogeRpc = `https://rest.cryptoapis.io/blockchain-data/dogecoin/testnet`;
+const getSepoliaProvider = () => {
+  return new ethers.providers.JsonRpcProvider(
+    'https://ethereum-sepolia.publicnode.com',
+  );
+};
+
+// bitcoin helpers
+
+const SATS = 100000000;
 const bitcoinRpc = `https://blockstream.info/testnet/api`;
 async function fetchTransaction(transactionId): Promise<bitcoin.Transaction> {
   const data = await fetchJson(`${bitcoinRpc}/tx/${transactionId}`);
@@ -356,8 +464,25 @@ async function fetchTransaction(transactionId): Promise<bitcoin.Transaction> {
   return tx;
 }
 
-const getSepoliaProvider = () => {
-  return new ethers.providers.JsonRpcProvider(
-    'https://ethereum-sepolia.publicnode.com',
-  );
+// doge helpers
+
+const dogeRpc = `https://rest.cryptoapis.io/blockchain-data/dogecoin/testnet`;
+const dogeFetchParams = {
+  headers: {
+    'X-Api-Key': process.env.CRYPTO_APIS_KEY,
+  },
 };
+const dogeGet = (path) => fetchJson(`${dogeRpc}${path}`, dogeFetchParams);
+const dogePost = (method, params = []) =>
+  fetchJson(`https://svc.blockdaemon.com/dogecoin/testnet/native`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.BLOCKDAEMON_API_KEY}`,
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method,
+      params,
+    }),
+  });

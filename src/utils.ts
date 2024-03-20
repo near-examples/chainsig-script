@@ -3,6 +3,8 @@ export const fetchJson = async (url, params = {}) => {
   try {
     res = await fetch(url, params);
     if (res.status !== 200) {
+      console.log('res error');
+      console.log(res);
       throw res;
     }
     return res.json();
