@@ -250,6 +250,9 @@ export const chains = {
           const hash = await res.text();
           console.log('tx hash', hash);
           console.log('explorer link', `${explorer}/tx/${hash}`);
+          console.log(
+            'NOTE: it might take a minute for transaction to be included in mempool',
+          );
         }
       } catch (e) {
         console.log('error broadcasting bitcoin tx', JSON.stringify(e));
