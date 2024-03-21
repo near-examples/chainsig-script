@@ -66,6 +66,8 @@ BLOCKDAEMON_API_KEY=""
 
 [Live Example - Near Testnet, Sepolia, Bitcoin Testnet](https://test.near.social/md1.testnet/widget/chainsig-sign-eth-tx)
 
+[A frontend example you can run locally](https://github.com/gagdiez/near-multichain)
+
 [Path naming conventions](https://github.com/near/near-fastauth-wallet/blob/dmd/chain_sig_docs/docs/chain_signature_api.org)
 
 [Chain Signatures Docs](https://docs.near.org/concepts/abstraction/chain-signatures)
