@@ -286,7 +286,7 @@ export const dogecoin = {
 
     let utxos = res.data.items.map((utxo) => ({
       ...utxo,
-      value: parseInt(utxo.amount) * SATS,
+      value: Math.floor(utxo.amount * SATS),
       txid: utxo.transactionId,
       vout: utxo.index,
     }));
@@ -367,10 +367,7 @@ export const dogecoin = {
     const { fast, standard } = feeRes.data.item;
     const feeRate = Math.max(parseFloat(fast), parseFloat(standard)) * SATS;
     const estimatedSize = utxos.length * 148 + 2 * 34 + 10;
-    // DEBUG FEE OVERRIDE
-    // const fee = estimatedSize * (feeRate + 3);
-    const fee = estimatedSize * (feeRate + 200); // fee rate is 100 sats on dogecoin testnet so increase to get moving?
-    // fee = 100000000;
+    const fee = estimatedSize * (feeRate * 5); // fee rate is 100 sats on dogecoin testnet so increase to get moving?
     console.log('doge fee', fee);
     const change = totalInput - sats - fee;
     console.log('change leftover', change);
@@ -407,34 +404,17 @@ export const dogecoin = {
     psbt.finalizeAllInputs();
 
     try {
-      const res = await fetch(`https://api.tatum.io/v3/dogecoin/broadcast`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.TATUM_API_KEY,
-        },
-        body: JSON.stringify({
-          txData: psbt.extractTransaction().toHex(),
-        }),
-      });
-
-      console.log('doge tx res', res);
-
-      const data = await res.json();
-      console.log('doge tx res', data);
-
-      // const res = await dogePost('sendrawtransaction', [
-      //   psbt.extractTransaction().toHex(),
-      // ]);
-      // console.log('response', res);
-      // if (res.status === 200) {
-      //   const hash = res.result;
-      //   console.log('tx hash', hash);
-      //   console.log('explorer link', `${explorer}/tx/${hash}`);
-      //   console.log(
-      //     'NOTE: it might take a minute for transaction to be included in mempool',
-      //   );
-      // }
+      const body = { txData: psbt.extractTransaction().toHex() };
+      const res = await dogePost(
+        `https://api.tatum.io/v3/dogecoin/broadcast`,
+        body,
+      );
+      const hash = res.txId;
+      console.log('tx hash', hash);
+      console.log('explorer link', `${explorer}/tx/${hash}`);
+      console.log(
+        'NOTE: it might take a minute for transaction to be included in mempool',
+      );
     } catch (e) {
       console.log('error broadcasting dogecoin tx', JSON.stringify(e));
     }
@@ -495,16 +475,12 @@ const dogeFetchParams = {
   },
 };
 const dogeGet = (path) => fetchJson(`${dogeRpc}${path}`, dogeFetchParams);
-const dogePost = (method, params = []) =>
-  fetchJson(`https://svc.blockdaemon.com/dogecoin/testnet/native`, {
+const dogePost = (url, body) =>
+  fetchJson(url, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${process.env.BLOCKDAEMON_API_KEY}`,
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.TATUM_API_KEY,
     },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method,
-      params,
-    }),
+    body: JSON.stringify(body),
   });
