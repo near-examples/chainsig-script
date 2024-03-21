@@ -1,8 +1,7 @@
 import { program } from 'commander';
 import { generateAddress } from './kdf';
-import { account, sign } from './near';
-import { chains } from './chains';
-import { fetchJson } from './utils';
+import { sign } from './near';
+import { ethereum, bitcoin, dogecoin } from './chains';
 
 program
   .option('-ea')
@@ -49,25 +48,25 @@ async function main() {
     console.log(address);
   }
   if (s) {
-    const samplePath = 'ethereum,1';
     const samplePayload = new Array(32);
     for (let i = 0; i < samplePayload.length; i++) {
       samplePayload[i] = Math.floor(Math.random() * 255);
     }
-    const res = await sign(samplePayload, samplePath);
+    const res = await sign(samplePayload, MPC_PATH);
     console.log('signature', res);
   }
   if (etx) {
     const { address } = await genAddress('ethereum');
-    chains.ethereum.send({ from: address, to, amount });
+    ethereum.send({ from: address, to, amount });
   }
   if (btx) {
     const { address, publicKey } = await genAddress('bitcoin');
-    chains.bitcoin.send({ from: address, publicKey, to, amount });
+    bitcoin.send({ from: address, publicKey, to, amount });
   }
+  // UNFINISHED
   if (dtx) {
     const { address, publicKey } = await genAddress('dogecoin');
-    chains.dogecoin.send({ from: address, publicKey, to, amount });
+    dogecoin.send({ from: address, publicKey, to, amount });
   }
 }
 

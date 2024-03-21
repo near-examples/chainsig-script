@@ -2,453 +2,442 @@ import { ethers } from 'ethers';
 import BN from 'bn.js';
 import { fetchJson } from './utils';
 import { sign } from './near';
-import * as bitcoin from 'bitcoinjs-lib';
+import * as bitcoinJs from 'bitcoinjs-lib';
 import coininfo from 'coininfo';
 import prompts from 'prompts';
 
-export const chains = {
-  ethereum: {
-    name: 'Sepolia',
-    chainId: 11155111,
-    currency: 'ETH',
-    explorer: 'https://sepolia.etherscan.io',
-    gasLimit: 21000,
-    getBalance: ({ address }) => getSepoliaProvider().getBalance(address),
-    send: async ({
-      from: address,
-      to = '0x525521d79134822a342d330bd91DA67976569aF1',
-      amount = '0.001',
-    }) => {
-      if (!address) return console.log('must provide a sending address');
-      const { gasLimit, chainId, getBalance, explorer, currency } =
-        chains.ethereum;
+export const ethereum = {
+  name: 'Sepolia',
+  chainId: 11155111,
+  currency: 'ETH',
+  explorer: 'https://sepolia.etherscan.io',
+  gasLimit: 21000,
+  getBalance: ({ address }) => getSepoliaProvider().getBalance(address),
+  send: async ({
+    from: address,
+    to = '0x525521d79134822a342d330bd91DA67976569aF1',
+    amount = '0.001',
+  }) => {
+    if (!address) return console.log('must provide a sending address');
+    const { gasLimit, chainId, getBalance, explorer, currency } = ethereum;
 
-      const balance = await getBalance({ address });
-      console.log('balance', ethers.utils.formatUnits(balance), currency);
+    const balance = await getBalance({ address });
+    console.log('balance', ethers.utils.formatUnits(balance), currency);
 
-      const nonce = await getSepoliaProvider().getTransactionCount(address);
-      const {
-        data: { rapid, fast, standard },
-      } = await fetchJson(
-        `https://sepolia.beaconcha.in/api/v1/execution/gasnow`,
-      );
-      let gasPrice = Math.max(rapid, fast, standard);
-      if (!gasPrice) {
-        console.log('Unable to get gas price. Please refresh and try again.');
+    // get the nonce for the sender
+    const nonce = await getSepoliaProvider().getTransactionCount(address);
+    // get current gas prices on Sepolia
+    const {
+      data: { rapid, fast, standard },
+    } = await fetchJson(`https://sepolia.beaconcha.in/api/v1/execution/gasnow`);
+    let gasPrice = Math.max(rapid, fast, standard);
+    if (!gasPrice) {
+      console.log('Unable to get gas price. Please refresh and try again.');
+    }
+
+    // check sending value
+    const value = ethers.utils.hexlify(ethers.utils.parseUnits(amount));
+    if (value === '0x00') {
+      console.log('Amount is zero. Please try a non-zero amount.');
+    }
+
+    // check account has enough balance to cover value + gas spend
+    if (
+      !balance ||
+      new BN(balance.toString()).lt(
+        new BN(ethers.utils.parseUnits(amount).toString()).add(
+          new BN(gasPrice).mul(new BN(gasLimit.toString())),
+        ),
+      )
+    ) {
+      return console.log('insufficient funds');
+    }
+
+    console.log('sending', amount, currency, 'from', address, 'to', to);
+    const cont = await prompts({
+      type: 'confirm',
+      name: 'value',
+      message: 'Confirm? (y or n)',
+      initial: true,
+    });
+    if (!cont.value) return;
+
+    // construct the base tx (UNSIGNED)
+    const baseTx = {
+      to,
+      nonce,
+      data: [],
+      value,
+      gasLimit,
+      gasPrice,
+      chainId,
+    };
+
+    // create hash of unsigned TX to sign -> payload
+    const unsignedTx = ethers.utils.serializeTransaction(baseTx);
+    const txHash = ethers.utils.keccak256(unsignedTx);
+    const payload = Object.values(ethers.utils.arrayify(txHash));
+    // get signature from MPC contract
+    const sig: any = await sign(payload, process.env.MPC_PATH);
+    if (!sig) return;
+    // payload was reversed in sign(...) call for MPC contract, reverse it back to recover eth address
+    payload.reverse();
+    sig.r = '0x' + sig.r;
+    sig.s = '0x' + sig.s;
+
+    // check 2 values for v (y-parity) and recover the same ethereum address from the generateAddress call (in app.ts)
+    let addressRecovered = false;
+    for (let v = 0; v < 2; v++) {
+      sig.v = v + chainId * 2 + 35;
+      const recoveredAddress = ethers.utils.recoverAddress(payload, sig);
+      console.log('recoveredAddress', recoveredAddress);
+      if (recoveredAddress.toLowerCase() === address.toLowerCase()) {
+        addressRecovered = true;
+        break;
       }
+    }
+    if (!addressRecovered) {
+      return console.log('signature failed to recover correct sending address');
+    }
 
-      const value = ethers.utils.hexlify(ethers.utils.parseUnits(amount));
-      if (value === '0x00') {
-        console.log('Amount is zero. Please try a non-zero amount.');
+    // signature now has correct { r, s, v }
+    // broadcast TX
+    try {
+      const hash = await getSepoliaProvider().send('eth_sendRawTransaction', [
+        ethers.utils.serializeTransaction(baseTx, sig),
+      ]);
+      console.log('tx hash', hash);
+      console.log('explorer link', `${explorer}/tx/${hash}`);
+      console.log('fetching updated balance in 60s...');
+      setTimeout(async () => {
+        const balance = await getBalance({ address });
+        console.log('balance', ethers.utils.formatUnits(balance), currency);
+      }, 60000);
+    } catch (e) {
+      if (/nonce too low/gi.test(JSON.stringify(e))) {
+        return console.log('tx has been tried');
       }
-
-      // check balance
-      if (
-        !balance ||
-        new BN(balance.toString()).lt(
-          new BN(ethers.utils.parseUnits(amount).toString()).add(
-            new BN(gasPrice).mul(new BN(gasLimit.toString())),
-          ),
-        )
-      ) {
-        return console.log('insufficient funds');
+      if (/gas too low|underpriced/gi.test(JSON.stringify(e))) {
+        return console.log(e);
       }
-
-      console.log('sending', amount, currency, 'from', address, 'to', to);
-      const cont = await prompts({
-        type: 'confirm',
-        name: 'value',
-        message: 'Confirm? (y or n)',
-        initial: true,
-      });
-      if (!cont.value) return;
-
-      const baseTx = {
-        to,
-        nonce,
-        data: [],
-        value,
-        gasLimit,
-        gasPrice,
-        chainId,
-      };
-
-      const unsignedTx = ethers.utils.serializeTransaction(baseTx);
-      const txHash = ethers.utils.keccak256(unsignedTx);
-      const payload = Object.values(ethers.utils.arrayify(txHash));
-      const sig: any = await sign(payload, process.env.MPC_PATH);
-      if (!sig) return;
-      // payload was reverse in sign(...) call for MPC contract, reverse back to recover eth address
-      payload.reverse();
-      sig.r = '0x' + sig.r;
-      sig.s = '0x' + sig.s;
-
-      let addressRecovered = false;
-      for (let v = 0; v < 2; v++) {
-        sig.v = v + chainId * 2 + 35;
-        const recoveredAddress = ethers.utils.recoverAddress(payload, sig);
-        console.log('recoveredAddress', recoveredAddress);
-        if (recoveredAddress.toLowerCase() === address.toLowerCase()) {
-          addressRecovered = true;
-          break;
-        }
-      }
-
-      if (!addressRecovered) {
-        return console.log(
-          'signature failed to recover correct sending address',
-        );
-      }
-
-      try {
-        const hash = await getSepoliaProvider().send('eth_sendRawTransaction', [
-          ethers.utils.serializeTransaction(baseTx, sig),
-        ]);
-        console.log('tx hash', hash);
-        console.log('explorer link', `${explorer}/tx/${hash}`);
-        console.log('fetching updated balance in 60s...');
-        setTimeout(async () => {
-          const balance = await getBalance({ address });
-          console.log('balance', ethers.utils.formatUnits(balance), currency);
-        }, 60000);
-      } catch (e) {
-        if (/nonce too low/gi.test(JSON.stringify(e))) {
-          return console.log('tx has been tried');
-        }
-        if (/gas too low|underpriced/gi.test(JSON.stringify(e))) {
-          return console.log(e);
-        }
-        console.log(e);
-      }
-    },
+      console.log(e);
+    }
   },
-  bitcoin: {
-    name: 'Bitcoin Testnet',
-    currency: 'sats',
-    explorer: 'https://blockstream.info/testnet',
-    getBalance: async ({ address, getUtxos = false }) => {
-      const res = await fetchJson(
-        `https://blockstream.info/testnet/api/address/${address}/utxo`,
-      );
+};
 
-      let utxos = res.map((utxo) => ({
-        txid: utxo.txid,
-        vout: utxo.vout,
-        value: utxo.value,
-      }));
-      // ONLY SIGNING 1 UTXO PER TX
-      let maxValue = 0;
-      utxos.forEach((utxo) => {
-        // ONLY SIGNING THE MAX VALUE UTXO
-        if (utxo.value > maxValue) maxValue = utxo.value;
-      });
-      utxos = utxos.filter((utxo) => utxo.value === maxValue);
+export const bitcoin = {
+  name: 'Bitcoin Testnet',
+  currency: 'sats',
+  explorer: 'https://blockstream.info/testnet',
+  getBalance: async ({ address, getUtxos = false }) => {
+    const res = await fetchJson(
+      `https://blockstream.info/testnet/api/address/${address}/utxo`,
+    );
 
-      if (!utxos || !utxos.length) {
-        console.log(
-          'no utxos for address',
-          address,
-          'please fund address and try again',
-        );
-      }
+    let utxos = res.map((utxo) => ({
+      txid: utxo.txid,
+      vout: utxo.vout,
+      value: utxo.value,
+    }));
+    // ONLY RETURNING AND SIGNING LARGEST UTXO
+    // WHY?
+    // For convenience in client side, this will only require 1 Near signature for 1 Bitcoin TX.
+    // Solutions for signing multiple UTXOs using MPC with a single Near TX are being worked on.
+    let maxValue = 0;
+    utxos.forEach((utxo) => {
+      if (utxo.value > maxValue) maxValue = utxo.value;
+    });
+    utxos = utxos.filter((utxo) => utxo.value === maxValue);
 
-      return getUtxos ? utxos : maxValue;
-    },
-    send: async ({
-      from: address,
-      publicKey,
-      to = 'n47ZTPR31eyi5SZNMbZQngJ4wiZMxXw1bS',
-      amount = '1',
-    }) => {
-      if (!address) return console.log('must provide a sending address');
-      const { getBalance, explorer, currency } = chains.bitcoin;
-      const sats = parseInt(amount);
-
-      const utxos = await getBalance({ address, getUtxos: true });
-
-      console.log('balance', utxos[0].value, currency);
-      if (utxos[0].value < sats) {
-        return console.log('insufficient funds');
-      }
-      console.log('sending', amount, currency, 'from', address, 'to', to);
-      const cont = await prompts({
-        type: 'confirm',
-        name: 'value',
-        message: 'Confirm? (y or n)',
-        initial: true,
-      });
-      if (!cont.value) return;
-
-      const psbt = new bitcoin.Psbt({ network: bitcoin.networks.testnet });
-      let totalInput = 0;
-
-      // ONLY SIGNING 1 UTXO PER TX
-
-      await Promise.all(
-        utxos.map(async (utxo) => {
-          totalInput += utxo.value;
-
-          const transaction = await fetchTransaction(utxo.txid);
-          let inputOptions;
-          if (transaction.outs[utxo.vout].script.includes('0014')) {
-            inputOptions = {
-              hash: utxo.txid,
-              index: utxo.vout,
-              witnessUtxo: {
-                script: transaction.outs[utxo.vout].script,
-                value: utxo.value,
-              },
-            };
-          } else {
-            inputOptions = {
-              hash: utxo.txid,
-              index: utxo.vout,
-              nonWitnessUtxo: Buffer.from(transaction.toHex(), 'hex'),
-            };
-          }
-          psbt.addInput(inputOptions);
-        }),
-      );
-
-      psbt.addOutput({
-        address: to,
-        value: sats,
-      });
-
-      const feeRate = await fetchJson(`${bitcoinRpc}/fee-estimates`);
-      const estimatedSize = utxos.length * 148 + 2 * 34 + 10;
-      const fee = estimatedSize * (feeRate[6] + 3);
-      console.log('btc fee', fee);
-      const change = totalInput - sats - fee;
-      console.log('change leftover', change);
-      if (change > 0) {
-        psbt.addOutput({
-          address: address,
-          value: change,
-        });
-      }
-
-      const keyPair = {
-        publicKey: Buffer.from(publicKey, 'hex'),
-        sign: async (transactionHash) => {
-          const payload = Object.values(ethers.utils.arrayify(transactionHash));
-          const sig: any = await sign(payload, process.env.MPC_PATH);
-          if (!sig) return;
-          return Buffer.from(sig.r + sig.s, 'hex');
-        },
-      };
-
-      await Promise.all(
-        utxos.map(async (_, index) => {
-          try {
-            await psbt.signInputAsync(index, keyPair);
-          } catch (e) {
-            console.warn('not signed');
-          }
-        }),
-      );
-
-      psbt.finalizeAllInputs();
-      try {
-        const res = await fetch(`https://corsproxy.io/?${bitcoinRpc}/tx`, {
-          method: 'POST',
-          body: psbt.extractTransaction().toHex(),
-        });
-        console.log(res);
-        if (res.status === 200) {
-          const hash = await res.text();
-          console.log('tx hash', hash);
-          console.log('explorer link', `${explorer}/tx/${hash}`);
-          console.log(
-            'NOTE: it might take a minute for transaction to be included in mempool',
-          );
-        }
-      } catch (e) {
-        console.log('error broadcasting bitcoin tx', JSON.stringify(e));
-      }
-    },
-  },
-
-  dogecoin: {
-    name: 'Dogecoin Testnet',
-    currency: 'DOGE',
-    explorer: 'https://blockexplorer.one/dogecoin/testnet/address/',
-    getBalance: async ({ address, getUtxos }) => {
-      const res = await dogeGet(`/addresses/${address}/unspent-outputs`);
-
-      let utxos = res.data.items.map((utxo) => ({
-        ...utxo,
-        value: parseInt(utxo.amount) * SATS,
-        txid: utxo.transactionId,
-        vout: utxo.index,
-      }));
-
-      // ONLY SIGNING 1 UTXO PER TX
-      let maxValue = 0;
-      utxos.forEach((utxo) => {
-        // ONLY SIGNING THE MAX VALUE UTXO
-        if (utxo.value > maxValue) maxValue = utxo.value;
-      });
-      utxos = utxos.filter((utxo) => utxo.value === maxValue);
-
-      if (!utxos || !utxos.length) {
-        console.log(
-          'no utxos for address',
-          address,
-          'please fund address and try again',
-        );
-      }
-
-      return getUtxos ? utxos : maxValue;
-    },
-    send: async ({
-      from: address,
-      publicKey,
-      to = 'nrnmRc1cS1uTiJqYQSE3kvqeCj5FQpbDTd',
-      amount = '1',
-    }) => {
-      const { getBalance, explorer, currency } = chains.dogecoin;
-
-      //   const res = await fetch(`https://api.tatum.io/v3/dogecoin/info`, {
-      //     method: 'GET',
-      //     headers: {
-      //       'x-api-key': process.env.TATUM_API_KEY,
-      //     },
-      //   });
-      //   console.log('dogecoin chain info', await res.json());
-
-      const utxos = await chains.dogecoin.getBalance({
+    if (!utxos || !utxos.length) {
+      console.log(
+        'no utxos for address',
         address,
-        getUtxos: true,
-      });
+        'please fund address and try again',
+      );
+    }
 
-      const sats = parseInt(amount) * SATS;
+    return getUtxos ? utxos : maxValue;
+  },
+  send: async ({
+    from: address,
+    publicKey,
+    to = 'n47ZTPR31eyi5SZNMbZQngJ4wiZMxXw1bS',
+    amount = '1',
+  }) => {
+    if (!address) return console.log('must provide a sending address');
+    const { getBalance, explorer, currency } = bitcoin;
+    const sats = parseInt(amount);
 
-      console.log('balance', utxos[0].value, currency);
-      if (utxos[0].value < sats) {
-        return console.log('insufficient funds');
-      }
-      console.log('sending', amount, currency, 'from', address, 'to', to);
-      const cont = await prompts({
-        type: 'confirm',
-        name: 'value',
-        message: 'Confirm? (y or n)',
-        initial: true,
-      });
-      if (!cont.value) return;
+    // get utxos
+    const utxos = await getBalance({ address, getUtxos: true });
 
-      const network = coininfo.dogecoin.test.toBitcoinJS();
-      const psbt = new bitcoin.Psbt({ network });
-      let totalInput = 0;
+    // check balance (TODO include fee in check)
+    console.log('balance', utxos[0].value, currency);
+    if (utxos[0].value < sats) {
+      return console.log('insufficient funds');
+    }
+    console.log('sending', amount, currency, 'from', address, 'to', to);
+    const cont = await prompts({
+      type: 'confirm',
+      name: 'value',
+      message: 'Confirm? (y or n)',
+      initial: true,
+    });
+    if (!cont.value) return;
 
-      // ONLY SIGNING 1 UTXO PER TX
+    const psbt = new bitcoinJs.Psbt({ network: bitcoinJs.networks.testnet });
 
-      await Promise.all(
-        utxos.map(async (utxo) => {
-          totalInput += utxo.value;
-          const res = await dogeGet(`/transactions/${utxo.txid}/raw-data`);
-          const { transactionHex } = res.data.item;
-          const inputOptions = {
+    let totalInput = 0;
+    await Promise.all(
+      utxos.map(async (utxo) => {
+        totalInput += utxo.value;
+
+        const transaction = await fetchTransaction(utxo.txid);
+        let inputOptions;
+        if (transaction.outs[utxo.vout].script.includes('0014')) {
+          inputOptions = {
             hash: utxo.txid,
             index: utxo.vout,
-            nonWitnessUtxo: Buffer.from(transactionHex, 'hex'),
+            witnessUtxo: {
+              script: transaction.outs[utxo.vout].script,
+              value: utxo.value,
+            },
           };
+        } else {
+          inputOptions = {
+            hash: utxo.txid,
+            index: utxo.vout,
+            nonWitnessUtxo: Buffer.from(transaction.toHex(), 'hex'),
+          };
+        }
+        psbt.addInput(inputOptions);
+      }),
+    );
 
-          psbt.addInput(inputOptions);
-        }),
-      );
+    psbt.addOutput({
+      address: to,
+      value: sats,
+    });
 
+    // calculate fee
+    const feeRate = await fetchJson(`${bitcoinRpc}/fee-estimates`);
+    const estimatedSize = utxos.length * 148 + 2 * 34 + 10;
+    const fee = estimatedSize * (feeRate[6] + 3);
+    console.log('btc fee', fee);
+    const change = totalInput - sats - fee;
+    console.log('change leftover', change);
+    if (change > 0) {
       psbt.addOutput({
-        address: to,
-        value: sats,
+        address: address,
+        value: change,
+      });
+    }
+
+    // keyPair object required by psbt.signInputAsync(index, keyPair)
+    const keyPair = {
+      publicKey: Buffer.from(publicKey, 'hex'),
+      sign: async (transactionHash) => {
+        const payload = Object.values(ethers.utils.arrayify(transactionHash));
+        const sig: any = await sign(payload, process.env.MPC_PATH);
+        if (!sig) return;
+        return Buffer.from(sig.r + sig.s, 'hex');
+      },
+    };
+
+    await Promise.all(
+      utxos.map(async (_, index) => {
+        try {
+          await psbt.signInputAsync(index, keyPair);
+        } catch (e) {
+          console.warn('not signed');
+        }
+      }),
+    );
+
+    psbt.finalizeAllInputs();
+
+    // broadcast tx
+    try {
+      const res = await fetch(`https://corsproxy.io/?${bitcoinRpc}/tx`, {
+        method: 'POST',
+        body: psbt.extractTransaction().toHex(),
+      });
+      if (res.status === 200) {
+        const hash = await res.text();
+        console.log('tx hash', hash);
+        console.log('explorer link', `${explorer}/tx/${hash}`);
+        console.log(
+          'NOTE: it might take a minute for transaction to be included in mempool',
+        );
+      }
+    } catch (e) {
+      console.log('error broadcasting bitcoin tx', JSON.stringify(e));
+    }
+  },
+};
+
+export const dogecoin = {
+  name: 'Dogecoin Testnet',
+  currency: 'DOGE',
+  explorer: 'https://blockexplorer.one/dogecoin/testnet/address/',
+  getBalance: async ({ address, getUtxos }) => {
+    const res = await dogeGet(`/addresses/${address}/unspent-outputs`);
+
+    let utxos = res.data.items.map((utxo) => ({
+      ...utxo,
+      value: parseInt(utxo.amount) * SATS,
+      txid: utxo.transactionId,
+      vout: utxo.index,
+    }));
+
+    // ONLY SIGNING 1 UTXO PER TX
+    let maxValue = 0;
+    utxos.forEach((utxo) => {
+      // ONLY SIGNING THE MAX VALUE UTXO
+      if (utxo.value > maxValue) maxValue = utxo.value;
+    });
+    utxos = utxos.filter((utxo) => utxo.value === maxValue);
+
+    if (!utxos || !utxos.length) {
+      console.log(
+        'no utxos for address',
+        address,
+        'please fund address and try again',
+      );
+    }
+
+    return getUtxos ? utxos : maxValue;
+  },
+  send: async ({
+    from: address,
+    publicKey,
+    to = 'nrnmRc1cS1uTiJqYQSE3kvqeCj5FQpbDTd',
+    amount = '1',
+  }) => {
+    const { getBalance, explorer, currency } = dogecoin;
+
+    const utxos = await getBalance({
+      address,
+      getUtxos: true,
+    });
+
+    const sats = parseInt(amount) * SATS;
+
+    console.log('balance', utxos[0].value, currency);
+    if (utxos[0].value < sats) {
+      return console.log('insufficient funds');
+    }
+    console.log('sending', amount, currency, 'from', address, 'to', to);
+    const cont = await prompts({
+      type: 'confirm',
+      name: 'value',
+      message: 'Confirm? (y or n)',
+      initial: true,
+    });
+    if (!cont.value) return;
+
+    const network = coininfo.dogecoin.test.toBitcoinJS();
+    const psbt = new bitcoinJs.Psbt({ network });
+    let totalInput = 0;
+
+    // ONLY SIGNING 1 UTXO PER TX
+
+    await Promise.all(
+      utxos.map(async (utxo) => {
+        totalInput += utxo.value;
+        const res = await dogeGet(`/transactions/${utxo.txid}/raw-data`);
+        const { transactionHex } = res.data.item;
+        const inputOptions = {
+          hash: utxo.txid,
+          index: utxo.vout,
+          nonWitnessUtxo: Buffer.from(transactionHex, 'hex'),
+        };
+
+        psbt.addInput(inputOptions);
+      }),
+    );
+
+    psbt.addOutput({
+      address: to,
+      value: sats,
+    });
+
+    const feeRes = await dogeGet(`/mempool/fees`);
+    const { fast, standard } = feeRes.data.item;
+    const feeRate = Math.max(parseFloat(fast), parseFloat(standard)) * SATS;
+    const estimatedSize = utxos.length * 148 + 2 * 34 + 10;
+    // DEBUG FEE OVERRIDE
+    // const fee = estimatedSize * (feeRate + 3);
+    const fee = estimatedSize * (feeRate + 200); // fee rate is 100 sats on dogecoin testnet so increase to get moving?
+    // fee = 100000000;
+    console.log('doge fee', fee);
+    const change = totalInput - sats - fee;
+    console.log('change leftover', change);
+
+    if (change > 0) {
+      psbt.addOutput({
+        address: address,
+        value: change,
+      });
+    }
+
+    const keyPair = {
+      publicKey: Buffer.from(publicKey, 'hex'),
+      sign: async (transactionHash) => {
+        const payload = Object.values(ethers.utils.arrayify(transactionHash));
+
+        const sig: any = await sign(payload, process.env.MPC_PATH);
+
+        if (!sig) return;
+        return Buffer.from(sig.r + sig.s, 'hex');
+      },
+    };
+
+    await Promise.all(
+      utxos.map(async (_, index) => {
+        try {
+          await psbt.signInputAsync(index, keyPair);
+        } catch (e) {
+          console.warn('not signed');
+        }
+      }),
+    );
+
+    psbt.finalizeAllInputs();
+
+    try {
+      const res = await fetch(`https://api.tatum.io/v3/dogecoin/broadcast`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.TATUM_API_KEY,
+        },
+        body: JSON.stringify({
+          txData: psbt.extractTransaction().toHex(),
+        }),
       });
 
-      const feeRes = await dogeGet(`/mempool/fees`);
-      const { fast, standard } = feeRes.data.item;
-      const feeRate = Math.max(parseFloat(fast), parseFloat(standard)) * SATS;
-      const estimatedSize = utxos.length * 148 + 2 * 34 + 10;
-      // DEBUG FEE OVERRIDE
-      // const fee = estimatedSize * (feeRate + 3);
-      const fee = estimatedSize * (feeRate + 200); // fee rate is 100 sats on dogecoin testnet so increase to get moving?
-      // fee = 100000000;
-      console.log('doge fee', fee);
-      const change = totalInput - sats - fee;
-      console.log('change leftover', change);
+      console.log('doge tx res', res);
 
-      if (change > 0) {
-        psbt.addOutput({
-          address: address,
-          value: change,
-        });
-      }
+      const data = await res.json();
+      console.log('doge tx res', data);
 
-      const keyPair = {
-        publicKey: Buffer.from(publicKey, 'hex'),
-        sign: async (transactionHash) => {
-          const payload = Object.values(ethers.utils.arrayify(transactionHash));
-
-          const sig: any = await sign(payload, process.env.MPC_PATH);
-
-          //   const sig = {
-          //     r: 'BC59772F492301BB4203D7B339AB094123888C296D1DD38B88C6297F696C744E',
-          //     s: '334B5EB4B89A7518E350F54D8A68F77BDA97F9AC754AE3EBEF5A5DDC047F5817',
-          //   };
-
-          //   const sig = {
-          //     r: 'B1F5DF4951DC4ED375867F1A35AB94F4CAA60B10618115CDB9FB0DF921EC95E2',
-          //     s: '3667B3CDE89B77C39920A9A59743FFE2BAA62123D532CA607196EC9130271186',
-          //   };
-
-          if (!sig) return;
-          return Buffer.from(sig.r + sig.s, 'hex');
-        },
-      };
-
-      await Promise.all(
-        utxos.map(async (_, index) => {
-          try {
-            await psbt.signInputAsync(index, keyPair);
-          } catch (e) {
-            console.warn('not signed');
-          }
-        }),
-      );
-
-      psbt.finalizeAllInputs();
-
-      try {
-        const res = await fetch(`https://api.tatum.io/v3/dogecoin/broadcast`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': process.env.TATUM_API_KEY,
-          },
-          body: JSON.stringify({
-            txData: psbt.extractTransaction().toHex(),
-          }),
-        });
-
-        console.log('doge tx res', res);
-
-        const data = await res.json();
-        console.log('doge tx res', data);
-
-        // const res = await dogePost('sendrawtransaction', [
-        //   psbt.extractTransaction().toHex(),
-        // ]);
-        // console.log('response', res);
-        // if (res.status === 200) {
-        //   const hash = res.result;
-        //   console.log('tx hash', hash);
-        //   console.log('explorer link', `${explorer}/tx/${hash}`);
-        //   console.log(
-        //     'NOTE: it might take a minute for transaction to be included in mempool',
-        //   );
-        // }
-      } catch (e) {
-        console.log('error broadcasting dogecoin tx', JSON.stringify(e));
-      }
-    },
+      // const res = await dogePost('sendrawtransaction', [
+      //   psbt.extractTransaction().toHex(),
+      // ]);
+      // console.log('response', res);
+      // if (res.status === 200) {
+      //   const hash = res.result;
+      //   console.log('tx hash', hash);
+      //   console.log('explorer link', `${explorer}/tx/${hash}`);
+      //   console.log(
+      //     'NOTE: it might take a minute for transaction to be included in mempool',
+      //   );
+      // }
+    } catch (e) {
+      console.log('error broadcasting dogecoin tx', JSON.stringify(e));
+    }
   },
 };
 
@@ -464,9 +453,9 @@ const getSepoliaProvider = () => {
 
 const SATS = 100000000;
 const bitcoinRpc = `https://blockstream.info/testnet/api`;
-async function fetchTransaction(transactionId): Promise<bitcoin.Transaction> {
+async function fetchTransaction(transactionId): Promise<bitcoinJs.Transaction> {
   const data = await fetchJson(`${bitcoinRpc}/tx/${transactionId}`);
-  const tx = new bitcoin.Transaction();
+  const tx = new bitcoinJs.Transaction();
 
   tx.version = data.version;
   tx.locktime = data.locktime;

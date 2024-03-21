@@ -21,6 +21,7 @@ export const account = new Account(
   process.env.NEAR_ACCOUNT_ID,
 );
 export async function sign(payload, path) {
+  // reverse payload required by MPC contract
   payload.reverse();
   console.log('signing payload', payload.toString());
   console.log('with path', path);
@@ -42,6 +43,7 @@ export async function sign(payload, path) {
     return console.log('error signing', JSON.stringify(e));
   }
 
+  // parse result into signature values we need r, s but we don't need first 2 bytes of r (y-parity)
   if ('SuccessValue' in (res.status as any)) {
     const successValue = (res.status as any).SuccessValue;
     const decodedValue = Buffer.from(successValue, 'base64').toString('utf-8');
