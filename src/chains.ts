@@ -280,7 +280,7 @@ export const bitcoin = {
 export const dogecoin = {
   name: 'Dogecoin Testnet',
   currency: 'DOGE',
-  explorer: 'https://blockexplorer.one/dogecoin/testnet/address/',
+  explorer: 'https://blockexplorer.one/dogecoin/testnet',
   getBalance: async ({ address, getUtxos }) => {
     const res = await dogeGet(`/addresses/${address}/unspent-outputs`);
 

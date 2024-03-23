@@ -35,6 +35,7 @@ export async function sign(payload, path) {
       args: {
         payload,
         path,
+        key_version: 0,
       },
       gas: new BN('300000000000000'),
       attachedDeposit: new BN('0'),
