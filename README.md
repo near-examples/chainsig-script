@@ -32,10 +32,9 @@ MPC_CONTRACT_ID="multichain-testnet-2.testnet"
 MPC_PUBLIC_KEY="secp256k1:4HFcTSodRLVCGNVcGc4Mf2fwBBBxv9jxkGdiW2S2CA1y6UpVVRWKj6RX7d7TDt65k2Bj3w9FU4BGtt43ZvuhCnNt"
 ```
 
-### (WIP - UNFINISHED) For dogecoin testnet
+### For dogecoin testnet (link below)
 
 ```
-CRYPTO_APIS_KEY=""
 TATUM_API_KEY=""
 ```
 
@@ -64,9 +63,13 @@ TATUM_API_KEY=""
 
 # References & Useful Links
 
+### Examples
+
 [Live Example - Near Testnet, Sepolia, Bitcoin Testnet](https://test.near.social/md1.testnet/widget/chainsig-sign-eth-tx)
 
 [A frontend example you can run locally](https://github.com/gagdiez/near-multichain)
+
+### Docs
 
 [Path naming conventions](https://github.com/near/near-fastauth-wallet/blob/dmd/chain_sig_docs/docs/chain_signature_api.org)
 
@@ -74,14 +77,18 @@ TATUM_API_KEY=""
 
 [Chain Signatures Use Cases](https://docs.near.org/concepts/abstraction/signatures/use-cases)
 
+### MPC Repositories
+
 [MPC Repo](https://github.com/near/mpc-recovery/)
+
+### Faucets and API Keys
 
 [Sepolia Faucet](https://sepolia-faucet.pk910.de/)
 
 [Bitcoin Testnet Faucet](https://faucet.triangleplatform.com/bitcoin/testnet)
 
-[Dogecoin Crypto APIs API Key](https://my.cryptoapis.io/)
+#### For Dogecoin, you will need to register for Tatum API (free plan):
 
-[Dogecoin Blockdaemon API Key](https://app.blockdaemon.com/ubiquity/connect)
+[Dogecoin Tatum API](https://tatum.io/) and [docs](https://apidoc.tatum.io/tag/Dogecoin)
 
 [Dogecoin Testnet Faucet](https://shibe.technology/)

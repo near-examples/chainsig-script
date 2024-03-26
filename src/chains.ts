@@ -282,32 +282,60 @@ export const dogecoin = {
   currency: 'DOGE',
   explorer: 'https://blockexplorer.one/dogecoin/testnet',
   getBalance: async ({ address, getUtxos }) => {
-    const res = await dogeGet(`/addresses/${address}/unspent-outputs`);
+    const query = new URLSearchParams({
+      pageSize: '50',
+      txType: 'incoming',
+    }).toString();
 
-    let utxos = res.data.items.map((utxo) => ({
-      ...utxo,
-      value: Math.floor(utxo.amount * SATS),
-      txid: utxo.transactionId,
-      vout: utxo.index,
-    }));
+    const res = await dogeGet(`/transaction/address/${address}?${query}`);
+    let maxUtxos = [];
+    res.forEach((tx) => {
+      let maxValue = 0;
+      let index = 0;
+      tx.outputs.forEach((o, i) => {
+        if (o.address !== address) return;
+        const value = parseFloat(o.value);
+        if (value > maxValue) {
+          maxValue = value;
+          index = i;
+        }
+      });
+      maxUtxos.push({
+        hash: tx.hash,
+        index,
+      });
+    });
+
+    // find utxos
+    let utxos = await Promise.all(
+      maxUtxos.map(async ({ hash, index }) => {
+        const res = await dogeGet(`/utxo/${hash}/${index}`, true);
+        if (!res) {
+          // console.log('no utxo found: ', hash);
+          return;
+        }
+        // console.log('utxo found:', hash);
+        const res2 = await dogeRpcCall('getrawtransaction', [hash, true]);
+        return {
+          value: res.value,
+          hash,
+          index,
+          nonWitnessUtxo: Buffer.from(res2.result.hex, 'hex'),
+        };
+      }),
+    );
+
+    // filter undefined (bad responses)
+    utxos = utxos.filter((utxo) => utxo !== undefined);
 
     // ONLY SIGNING 1 UTXO PER TX
     let maxValue = 0;
     utxos.forEach((utxo) => {
-      // ONLY SIGNING THE MAX VALUE UTXO
       if (utxo.value > maxValue) maxValue = utxo.value;
     });
     utxos = utxos.filter((utxo) => utxo.value === maxValue);
 
-    if (!utxos || !utxos.length) {
-      console.log(
-        'no utxos for address',
-        address,
-        'please fund address and try again',
-      );
-    }
-
-    return getUtxos ? utxos : maxValue;
+    return utxos;
   },
   send: async ({
     from: address,
@@ -321,10 +349,10 @@ export const dogecoin = {
       address,
       getUtxos: true,
     });
-
-    const sats = parseInt(amount) * SATS;
-
+    // display balance as doge then multiply everything by sats
     console.log('balance', utxos[0].value, currency);
+    utxos[0].value *= SATS;
+    const sats = parseInt(amount) * SATS;
     if (utxos[0].value < sats) {
       return console.log('insufficient funds');
     }
@@ -342,35 +370,25 @@ export const dogecoin = {
     let totalInput = 0;
 
     // ONLY SIGNING 1 UTXO PER TX
+    utxos.forEach((utxo) => {
+      totalInput += utxo.value;
+      const inputOptions = {
+        hash: utxo.hash,
+        index: utxo.index,
+        nonWitnessUtxo: utxo.nonWitnessUtxo,
+      };
+      psbt.addInput(inputOptions);
+    }),
+      psbt.addOutput({
+        address: to,
+        value: sats,
+      });
 
-    await Promise.all(
-      utxos.map(async (utxo) => {
-        totalInput += utxo.value;
-        const res = await dogeGet(`/transactions/${utxo.txid}/raw-data`);
-        const { transactionHex } = res.data.item;
-        const inputOptions = {
-          hash: utxo.txid,
-          index: utxo.vout,
-          nonWitnessUtxo: Buffer.from(transactionHex, 'hex'),
-        };
-
-        psbt.addInput(inputOptions);
-      }),
-    );
-
-    psbt.addOutput({
-      address: to,
-      value: sats,
-    });
-
-    const feeRes = await dogeGet(`/mempool/fees`);
-    const { fast, standard } = feeRes.data.item;
-    const feeRate = Math.max(parseFloat(fast), parseFloat(standard)) * SATS;
     const estimatedSize = utxos.length * 148 + 2 * 34 + 10;
-    const fee = estimatedSize * (feeRate * 5); // fee rate is 100 sats on dogecoin testnet so increase to get moving?
-    console.log('doge fee', fee);
+    const fee = estimatedSize * 500; // fee rate is usually 100 sats on dogecoin testnet so add more to get it moving
+    console.log('doge fee', fee, 'sats');
     const change = totalInput - sats - fee;
-    console.log('change leftover', change);
+    console.log('change leftover', change / SATS);
 
     if (change > 0) {
       psbt.addOutput({
@@ -405,10 +423,7 @@ export const dogecoin = {
 
     try {
       const body = { txData: psbt.extractTransaction().toHex() };
-      const res = await dogePost(
-        `https://api.tatum.io/v3/dogecoin/broadcast`,
-        body,
-      );
+      const res = await dogePost(`/broadcast`, body);
       const hash = res.txId;
       console.log('tx hash', hash);
       console.log('explorer link', `${explorer}/tx/${hash}`);
@@ -468,15 +483,21 @@ async function fetchTransaction(transactionId): Promise<bitcoinJs.Transaction> {
 
 // doge helpers
 
-const dogeRpc = `https://rest.cryptoapis.io/blockchain-data/dogecoin/testnet`;
-const dogeFetchParams = {
-  headers: {
-    'X-Api-Key': process.env.CRYPTO_APIS_KEY,
-  },
-};
-const dogeGet = (path) => fetchJson(`${dogeRpc}${path}`, dogeFetchParams);
-const dogePost = (url, body) =>
-  fetchJson(url, {
+const dogeRpc = `https://api.tatum.io/v3/dogecoin`;
+const dogeGet = (path, noWarnings = false) =>
+  fetchJson(
+    `${dogeRpc}${path}`,
+    {
+      method: 'GET',
+      headers: {
+        'x-api-key': process.env.TATUM_API_KEY,
+      },
+    },
+    noWarnings,
+  );
+
+const dogePost = (path, body) =>
+  fetchJson(`${dogeRpc}${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -484,3 +505,21 @@ const dogePost = (url, body) =>
     },
     body: JSON.stringify(body),
   });
+
+const dogeRpcCall = (method, params) =>
+  fetchJson(
+    `https://api.tatum.io/v3/blockchain/node/doge-testnet/${process.env.TATUM_API_KEY}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.TATUM_API_KEY,
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method,
+        params,
+        id: 1,
+      }),
+    },
+  );
