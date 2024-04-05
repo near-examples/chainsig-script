@@ -42,6 +42,15 @@ TATUM_API_KEY=""
 
 [Path naming conventions](https://github.com/near/near-fastauth-wallet/blob/dmd/chain_sig_docs/docs/chain_signature_api.org)
 
+# How to Use Commands
+
+(as a user or dev to verify everything works)
+
+1. Read the `Installation` steps and set up all environment variables first with `.env` file.
+2. Use the commands to generate addresses first.
+3. Fund these addresses with the Testnet Faucets provided in the links below.
+4. Use the commands to send funds from your generated addresses.
+
 # Prebuilt Commands
 
 `yarn start [commands]`
