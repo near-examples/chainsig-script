@@ -92,3 +92,7 @@ TATUM_API_KEY=""
 [Dogecoin Tatum API](https://tatum.io/) and [docs](https://apidoc.tatum.io/tag/Dogecoin)
 
 [Dogecoin Testnet Faucet](https://shibe.technology/)
+
+#### Ripple
+
+[Ripple Faucet](https://test.bithomp.com/faucet/)

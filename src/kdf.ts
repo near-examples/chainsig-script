@@ -4,6 +4,8 @@ import BN from 'bn.js';
 import keccak from 'keccak';
 import hash from 'hash.js';
 import bs58check from 'bs58check';
+import * as xrpl from 'xrpl';
+const { deriveAddress } = xrpl;
 
 function najPublicKeyStrToUncompressedHexPoint(najPublicKeyStr) {
   return (
@@ -97,23 +99,39 @@ async function uncompressedHexPointToBtcAddress(publicKeyHex, networkByte) {
 }
 
 export async function generateAddress({ publicKey, accountId, path, chain }) {
-  const childPublicKey = await deriveChildPublicKey(
+  let childPublicKey = await deriveChildPublicKey(
     najPublicKeyStrToUncompressedHexPoint(publicKey),
     accountId,
     path,
   );
   if (!chain) chain = 'ethereum';
-  const chains = {
-    btc: () =>
-      uncompressedHexPointToBtcAddress(childPublicKey, Buffer.from([0x00])),
-    bitcoin: () =>
-      uncompressedHexPointToBtcAddress(childPublicKey, Buffer.from([0x6f])),
-    dogecoin: () =>
-      uncompressedHexPointToBtcAddress(childPublicKey, Buffer.from([0x71])),
-    ethereum: () => uncompressedHexPointToEvmAddress(childPublicKey),
-  };
+  let address;
+  switch (chain) {
+    case 'ethereum':
+      address = uncompressedHexPointToEvmAddress(childPublicKey);
+      break;
+    case 'btc':
+      uncompressedHexPointToBtcAddress(childPublicKey, Buffer.from([0x00]));
+      break;
+    case 'bitcoin':
+      uncompressedHexPointToBtcAddress(childPublicKey, Buffer.from([0x6f]));
+      break;
+    case 'dogecoin':
+      address = uncompressedHexPointToBtcAddress(
+        childPublicKey,
+        Buffer.from([0x71]),
+      );
+      break;
+    case 'ripple':
+      const ec = new EC('secp256k1');
+      const x = childPublicKey.substring(2, 66);
+      const y = childPublicKey.substring(66);
+      const point = ec.curve.point(x, y);
+      childPublicKey = point.encode('hex', true);
+      address = deriveAddress(childPublicKey);
+  }
   return {
-    address: await chains[chain](),
+    address,
     publicKey: childPublicKey,
   };
 }

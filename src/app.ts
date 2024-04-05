@@ -1,16 +1,21 @@
 import { program } from 'commander';
 import { generateAddress } from './kdf';
 import { sign } from './near';
-import { ethereum, bitcoin, dogecoin } from './chains';
+import dogecoin from './dogecoin';
+import ethereum from './ethereum';
+import bitcoin from './bitcoin';
+import ripple from './ripple';
 
 program
   .option('-ea')
   .option('-ba')
   .option('-da')
+  .option('-ra')
   .option('-s')
   .option('-etx')
   .option('-btx')
   .option('-dtx')
+  .option('-rtx')
   .option('-a, --amount <char>')
   .option('-to, --to <char>');
 
@@ -25,7 +30,7 @@ const options = Object.entries(program.opts())
 
 async function main() {
   const { MPC_PUBLIC_KEY, NEAR_ACCOUNT_ID, MPC_PATH } = process.env;
-  const { ea, ba, da, s, etx, btx, dtx, to, amount } = options;
+  const { ea, ba, da, ra, s, etx, btx, dtx, rtx, to, amount } = options;
 
   const genAddress = (chain) =>
     generateAddress({
@@ -47,6 +52,10 @@ async function main() {
     const { address } = await genAddress('dogecoin');
     console.log(address);
   }
+  if (ra) {
+    const { address } = await genAddress('ripple');
+    console.log(address);
+  }
   if (s) {
     const samplePayload = new Array(32);
     for (let i = 0; i < samplePayload.length; i++) {
@@ -63,10 +72,14 @@ async function main() {
     const { address, publicKey } = await genAddress('bitcoin');
     bitcoin.send({ from: address, publicKey, to, amount });
   }
-  // UNFINISHED
   if (dtx) {
     const { address, publicKey } = await genAddress('dogecoin');
     dogecoin.send({ from: address, publicKey, to, amount });
+  }
+  // UNFINISHED
+  if (rtx) {
+    const { address, publicKey } = await genAddress('ripple');
+    ripple.send({ from: address, publicKey, to, amount });
   }
 }
 

@@ -4,7 +4,7 @@
   "license": "MIT",
   "author": "Matt Lockyer (https://github.com/mattlockyer)",
   "scripts": {
-    "start": "yarn tsc && node --env-file .env ./dist/app.js "
+    "start": "yarn tsc && node --env-file .env ./dist/app.js"
   },
   "devDependencies": {
     "@types/node": "^20.11.29",
@@ -19,6 +19,7 @@
     "keccak": "^3.0.4",
     "near-api-js": "^3.0.4",
     "prompts": "^2.4.2",
-    "typescript": "^5.4.2"
+    "typescript": "^5.4.2",
+    "xrpl": "^3.0.0"
   }
 }
