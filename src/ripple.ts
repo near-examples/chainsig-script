@@ -55,16 +55,15 @@ const ripple = {
         Account: address,
         Amount: xrpl.xrpToDrops('1'),
         Destination: 'rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe',
-        SigningPubKey: publicKey.toUpperCase(),
+        SigningPubKey: publicKey,
         NetworkID: undefined,
         TxnSignature: undefined,
         LastLedgerSequence: undefined,
       });
     const unsignedTx = await getTx();
-    // delete unsignedTx.NetworkID;
     unsignedTx.LastLedgerSequence += 10; // get ahead of LastLedgerSequence (after MPC signing)
 
-    // throws a nice JS error (according to docs)
+    // if bad tx (malformed) throws a nice JS error according to docs
     validate(unsignedTx as unknown as Record<string, unknown>);
 
     // encode for signing and take truncated sha512 hash as payload
@@ -76,7 +75,6 @@ const ripple = {
     const hash = new Uint8Array(hashUnsigned.slice(0, 32));
     const payload = Object.values(ethers.utils.arrayify(hash));
     const sig: any = await sign(payload, process.env.MPC_PATH);
-    console.log(sig);
     const sigBuffer = {
       r: new BN(Buffer.from(sig.r, 'hex')),
       s: new BN(Buffer.from(sig.s, 'hex')),
@@ -84,10 +82,8 @@ const ripple = {
     const signature = (Signature.default as any).prototype.toDER.call(
       sigBuffer,
     );
-    unsignedTx.TxnSignature = Buffer.from(signature)
-      .toString('hex')
-      .toUpperCase();
-    console.log(unsignedTx);
+    unsignedTx.TxnSignature = Buffer.from(signature).toString('hex');
+    console.log('transaction:', unsignedTx);
 
     const serializedSignedTx = encode(unsignedTx);
     const verified = verifySignature(serializedSignedTx);
