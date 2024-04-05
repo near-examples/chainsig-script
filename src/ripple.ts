@@ -1,17 +1,13 @@
 import { ethers } from 'ethers';
 import { sign } from './near';
-import { fetchJson } from './utils';
 import prompts from 'prompts';
 import BN from 'bn.js';
 import * as xrpl from 'xrpl';
 const { validate, verifySignature, encode, encodeForSigning } = xrpl;
 import * as Signature from 'elliptic/lib/elliptic/ec/signature';
-import { hashSignedTx } from 'xrpl/dist/npm/utils/hashes';
 
 const xrpTestnet = 'wss://s.altnet.rippletest.net:51233';
 const DROPS = 1000000;
-
-// https://test.bithomp.com/explorer/rPbcwLLhUdYTJLnkepbpxmnkn5xCnkKRBJ
 
 const ripple = {
   name: 'Ripple Testnet',

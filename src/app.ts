@@ -76,7 +76,6 @@ async function main() {
     const { address, publicKey } = await genAddress('dogecoin');
     await dogecoin.send({ from: address, publicKey, to, amount });
   }
-  // UNFINISHED
   if (rtx) {
     const { address, publicKey } = await genAddress('ripple');
     await ripple.send({ from: address, publicKey, to, amount });

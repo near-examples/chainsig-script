@@ -51,10 +51,12 @@ TATUM_API_KEY=""
 - -ea - ethereum addressm (EVM)
 - -ba - bitcoin testnet address
 - -da - dogecoin testnet address
+- -ra - ripple testnet address
 - -s - sign sample payload using Near account
 - -etx - send ETH
 - -btx - send BTC
-- -dtx - send DOGE (WIP - UNFINISHED)
+- -dtx - send DOGE (requires API KEY)
+- -rtx - send XRP
 
 ### Sending Options
 
@@ -96,3 +98,5 @@ TATUM_API_KEY=""
 #### Ripple
 
 [Ripple Faucet](https://test.bithomp.com/faucet/)
+
+[Ripple Explorer](https://test.bithomp.com/explorer)
