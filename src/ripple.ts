@@ -8,36 +8,32 @@ const { validate, verifySignature, encode, encodeForSigning } = xrpl;
 import * as Signature from 'elliptic/lib/elliptic/ec/signature';
 import { hashSignedTx } from 'xrpl/dist/npm/utils/hashes';
 
+const xrpTestnet = 'wss://s.altnet.rippletest.net:51233';
+const DROPS = 1000000;
+
 // https://test.bithomp.com/explorer/rPbcwLLhUdYTJLnkepbpxmnkn5xCnkKRBJ
 
 const ripple = {
   name: 'Ripple Testnet',
   currency: 'XRP',
-  explorer: 'https://blockexplorer.one/dogecoin/testnet',
-  getBalance: async ({ address, getUtxos }) => {
-    // Connect to the testnet
-    const client = new xrpl.Client('wss://s.altnet.rippletest.net:51233');
-    await client.connect();
+  explorer: 'https://test.bithomp.com/explorer',
+  getBalance: async ({ address, client }) => {
+    if (!client) {
+      client = new xrpl.Client(xrpTestnet);
+      await client.connect();
+    }
 
-    // const accountInfoResponse = await client.request({
-    //   command: 'account_info',
-    //   account: address,
-    //   strict: true,
-    // });
+    const {
+      result: {
+        account_data: { Balance },
+      },
+    } = await client.request({
+      command: 'account_info',
+      account: address,
+      strict: true,
+    });
 
-    // debug if accountInfoResponse is unavailable
-    // const account_data = {
-    //   Account: 'rPbcwLLhUdYTJLnkepbpxmnkn5xCnkKRBJ',
-    //   Balance: '1000000000',
-    //   Flags: 0,
-    //   LedgerEntryType: 'AccountRoot',
-    //   OwnerCount: 0,
-    //   PreviousTxnID:
-    //     '3620B4F5470FEB1A116C3A92BED16F5D8FB9503C46E6017066CFC2F421A6B4B8',
-    //   PreviousTxnLgrSeq: 46626023,
-    //   Sequence: 46626023,
-    //   index: '4F1B0A869668EFF19AAD8997FA1BB5DDA6286E3B6A886ED887D1DA38943F2234',
-    // };
+    return Balance;
   },
   send: async ({
     from: address = 'rPbcwLLhUdYTJLnkepbpxmnkn5xCnkKRBJ',
@@ -45,9 +41,26 @@ const ripple = {
     to = 'rPbcwLLhUdYTJLnkepbpxmnkn5xCnkKRBJ',
     amount = '1',
   }) => {
-    // Connect to the testnet
-    const client = new xrpl.Client('wss://s.altnet.rippletest.net:51233');
+    const { getBalance, currency, explorer } = ripple;
+
+    const client = new xrpl.Client(xrpTestnet);
     await client.connect();
+
+    const balance = await getBalance({ address, client });
+    console.log('XRP Balance:', parseInt(balance) / DROPS);
+    if (parseInt(amount) * DROPS > parseInt(balance)) {
+      console.log('Not enough balance to send amount:', amount);
+      return;
+    }
+
+    console.log('sending', amount, currency, 'from', address, 'to', to);
+    const cont = await prompts({
+      type: 'confirm',
+      name: 'value',
+      message: 'Confirm? (y or n)',
+      initial: true,
+    });
+    if (!cont.value) return;
 
     const getTx = () =>
       client.autofill({
@@ -93,8 +106,10 @@ const ripple = {
       const res = await client.submitAndWait(serializedSignedTx, {
         failHard: true,
       });
-      console.log(res);
+      console.log('Success');
+      console.log('Explorer link:', `${explorer}/${res.result.hash}`);
     } catch (e) {
+      console.log('Transaction failed broadcasting to network');
       console.log(e);
     }
 

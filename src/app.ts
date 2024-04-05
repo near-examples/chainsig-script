@@ -66,21 +66,23 @@ async function main() {
   }
   if (etx) {
     const { address } = await genAddress('ethereum');
-    ethereum.send({ from: address, to, amount });
+    await ethereum.send({ from: address, to, amount });
   }
   if (btx) {
     const { address, publicKey } = await genAddress('bitcoin');
-    bitcoin.send({ from: address, publicKey, to, amount });
+    await bitcoin.send({ from: address, publicKey, to, amount });
   }
   if (dtx) {
     const { address, publicKey } = await genAddress('dogecoin');
-    dogecoin.send({ from: address, publicKey, to, amount });
+    await dogecoin.send({ from: address, publicKey, to, amount });
   }
   // UNFINISHED
   if (rtx) {
     const { address, publicKey } = await genAddress('ripple');
-    ripple.send({ from: address, publicKey, to, amount });
+    await ripple.send({ from: address, publicKey, to, amount });
   }
+
+  process.exit();
 }
 
 main();
