@@ -104,8 +104,8 @@ TATUM_API_KEY=""
 
 [Dogecoin Testnet Faucet](https://shibe.technology/)
 
-#### Ripple
+#### XRP Ledger
 
-[Ripple Faucet](https://test.bithomp.com/faucet/)
+[XRP Ledger Testnet Faucet](https://test.bithomp.com/faucet/)
 
-[Ripple Explorer](https://test.bithomp.com/explorer)
+[XRP Ledger Testnet Explorer](https://test.bithomp.com/explorer)

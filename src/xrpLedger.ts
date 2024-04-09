@@ -9,8 +9,8 @@ import * as Signature from 'elliptic/lib/elliptic/ec/signature';
 const xrpTestnet = 'wss://s.altnet.rippletest.net:51233';
 const DROPS = 1000000;
 
-const ripple = {
-  name: 'Ripple Testnet',
+const xrpLedger = {
+  name: 'XRPL Testnet',
   currency: 'XRP',
   explorer: 'https://test.bithomp.com/explorer',
   getBalance: async ({ address, client }) => {
@@ -37,7 +37,7 @@ const ripple = {
     to = 'rPbcwLLhUdYTJLnkepbpxmnkn5xCnkKRBJ',
     amount = '1',
   }) => {
-    const { getBalance, currency, explorer } = ripple;
+    const { getBalance, currency, explorer } = xrpLedger;
 
     const client = new xrpl.Client(xrpTestnet);
     await client.connect();
@@ -113,4 +113,4 @@ const ripple = {
   },
 };
 
-export default ripple;
+export default xrpLedger;

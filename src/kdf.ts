@@ -122,7 +122,7 @@ export async function generateAddress({ publicKey, accountId, path, chain }) {
         Buffer.from([0x71]),
       );
       break;
-    case 'ripple':
+    case 'xrpLedger':
       const ec = new EC('secp256k1');
       const x = childPublicKey.substring(2, 66);
       const y = childPublicKey.substring(66);

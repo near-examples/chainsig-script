@@ -4,7 +4,7 @@ import { sign } from './near';
 import dogecoin from './dogecoin';
 import ethereum from './ethereum';
 import bitcoin from './bitcoin';
-import ripple from './ripple';
+import xrpLedger from './xrpLedger';
 
 program
   .option('-ea')
@@ -53,7 +53,7 @@ async function main() {
     console.log(address);
   }
   if (ra) {
-    const { address } = await genAddress('ripple');
+    const { address } = await genAddress('xrpLedger');
     console.log(address);
   }
   if (s) {
@@ -77,8 +77,8 @@ async function main() {
     await dogecoin.send({ from: address, publicKey, to, amount });
   }
   if (rtx) {
-    const { address, publicKey } = await genAddress('ripple');
-    await ripple.send({ from: address, publicKey, to, amount });
+    const { address, publicKey } = await genAddress('xrpLedger');
+    await xrpLedger.send({ from: address, publicKey, to, amount });
   }
 
   process.exit();
