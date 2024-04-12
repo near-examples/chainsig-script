@@ -1,3 +1,4 @@
+import { readFileSync } from 'fs';
 import { ethers } from 'ethers';
 import BN from 'bn.js';
 import { fetchJson } from './utils';
@@ -10,20 +11,8 @@ const ethereum = {
   currency: 'ETH',
   explorer: 'https://sepolia.etherscan.io',
   gasLimit: 21000,
-  getBalance: ({ address }) => getSepoliaProvider().getBalance(address),
-  send: async ({
-    from: address,
-    to = '0x525521d79134822a342d330bd91DA67976569aF1',
-    amount = '0.001',
-  }) => {
-    if (!address) return console.log('must provide a sending address');
-    const { gasLimit, chainId, getBalance, explorer, currency } = ethereum;
 
-    const balance = await getBalance({ address });
-    console.log('balance', ethers.utils.formatUnits(balance), currency);
-
-    // get the nonce for the sender
-    const nonce = await getSepoliaProvider().getTransactionCount(address);
+  getGasPrice: async () => {
     // get current gas prices on Sepolia
     const {
       data: { rapid, fast, standard },
@@ -32,6 +21,33 @@ const ethereum = {
     if (!gasPrice) {
       console.log('Unable to get gas price. Please refresh and try again.');
     }
+    return Math.max(rapid, fast, standard);
+  },
+
+  getBalance: ({ address }) => getSepoliaProvider().getBalance(address),
+
+  send: async ({
+    from: address,
+    to = '0x525521d79134822a342d330bd91DA67976569aF1',
+    amount = '0.001',
+  }) => {
+    if (!address) return console.log('must provide a sending address');
+    const {
+      getGasPrice,
+      gasLimit,
+      chainId,
+      getBalance,
+      completeEthereumTx,
+      currency,
+    } = ethereum;
+
+    const balance = await getBalance({ address });
+    console.log('balance', ethers.utils.formatUnits(balance), currency);
+
+    const provider = getSepoliaProvider();
+    // get the nonce for the sender
+    const nonce = await provider.getTransactionCount(address);
+    const gasPrice = await getGasPrice();
 
     // check sending value
     const value = ethers.utils.hexlify(ethers.utils.parseUnits(amount));
@@ -60,7 +76,6 @@ const ethereum = {
     });
     if (!cont.value) return;
 
-    // construct the base tx (UNSIGNED)
     const baseTx = {
       to,
       nonce,
@@ -70,6 +85,131 @@ const ethereum = {
       gasPrice,
       chainId,
     };
+
+    await completeEthereumTx({ address, baseTx });
+  },
+
+  deployContract: async ({ from: address, path = './contracts/nft.bin' }) => {
+    const { explorer, getGasPrice, completeEthereumTx, chainId } = ethereum;
+
+    const bytes = readFileSync(path, 'utf8');
+
+    const provider = getSepoliaProvider();
+    const nonce = await provider.getTransactionCount(address);
+
+    const contractAddress = ethers.utils.getContractAddress({
+      from: address,
+      nonce,
+    });
+
+    console.log('deploying bytes', bytes.length, 'to address', contractAddress);
+
+    const cont = await prompts({
+      type: 'confirm',
+      name: 'value',
+      message: 'Confirm? (y or n)',
+      initial: true,
+    });
+    if (!cont.value) return;
+
+    const gasPrice = await getGasPrice();
+
+    const baseTx = {
+      nonce,
+      data: bytes,
+      value: 0,
+      gasLimit: 6000000, // 6m gas
+      gasPrice,
+      chainId,
+    };
+
+    await completeEthereumTx({ address, baseTx });
+
+    console.log('contract deployed successfully to address:');
+    console.log(contractAddress);
+    console.log('explorer link', `${explorer}/address/${contractAddress}`);
+  },
+
+  view: async ({
+    to = '0x09a1a4e1cfca73c2e4f6599a7e6b98708fda2664',
+    method = 'balanceOf',
+    args = { address: '0x525521d79134822a342d330bd91da67976569af1' },
+    retParams = ['uint256'],
+  }) => {
+    const provider = getSepoliaProvider();
+    const abi = [
+      `function ${method}(${Object.keys(args).join(
+        ',',
+      )}) returns (${retParams.join(',')})`,
+    ];
+    const iface = new ethers.utils.Interface(abi);
+    const allArgs = [];
+    const argValues = Object.values(args);
+    for (let i = 0; i < argValues.length; i++) {
+      allArgs.push(argValues[i]);
+    }
+    const data = iface.encodeFunctionData(method, allArgs);
+
+    console.log('view call', abi[0], 'to contract', to, 'with args', allArgs);
+
+    const res = await provider.call({
+      to,
+      data,
+    });
+
+    const decoded = iface.decodeFunctionResult(method, res);
+
+    console.log('view call result', decoded.toString());
+  },
+
+  call: async ({
+    from: address,
+    to = '0x09a1a4e1cfca73c2e4f6599a7e6b98708fda2664',
+    method = 'mint',
+    args = [{ address: '0x525521d79134822a342d330bd91da67976569af1' }],
+  }) => {
+    const { getGasPrice, completeEthereumTx, chainId } = ethereum;
+
+    const provider = getSepoliaProvider();
+    const abi = [
+      `function ${method}(${args
+        .map((a, i) => Object.keys(a)[0] + ' ' + i)
+        .join(',')})`,
+    ];
+    const iface = new ethers.utils.Interface(abi);
+    const allArgs = [];
+    for (let i = 0; i < args.length; i++) {
+      allArgs.push(Object.values(args[i])[0]);
+    }
+    const data = iface.encodeFunctionData(method, allArgs);
+
+    console.log('calling', abi[0], 'to contract', to, 'with args', allArgs);
+
+    const cont = await prompts({
+      type: 'confirm',
+      name: 'value',
+      message: 'Confirm? (y or n)',
+      initial: true,
+    });
+    if (!cont.value) return;
+
+    const gasPrice = await getGasPrice();
+    const nonce = await provider.getTransactionCount(address);
+    const baseTx = {
+      to,
+      nonce,
+      data,
+      value: 0,
+      gasLimit: 1000000, // 1m
+      gasPrice,
+      chainId,
+    };
+
+    await completeEthereumTx({ address, baseTx });
+  },
+
+  completeEthereumTx: async ({ address, baseTx }) => {
+    const { chainId, getBalance, explorer, currency } = ethereum;
 
     // create hash of unsigned TX to sign -> payload
     const unsignedTx = ethers.utils.serializeTransaction(baseTx);

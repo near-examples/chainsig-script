@@ -16,8 +16,15 @@ program
   .option('-btx')
   .option('-dtx')
   .option('-rtx')
+  .option('-edc')
+  .option('-view')
+  .option('-call')
   .option('-a, --amount <char>')
-  .option('-to, --to <char>');
+  .option('-t, --to <char>')
+  .option('-p, --path <char>')
+  .option('-m, --method <char>')
+  .option('--args <char>')
+  .option('-rp, --retParams <char>');
 
 program.parse();
 
@@ -28,9 +35,38 @@ const options = Object.entries(program.opts())
   }))
   .reduce((a, c) => ({ ...a, ...c }), {});
 
+const tryParse = (s) => {
+  if (!s) return;
+  try {
+    return JSON.parse(s);
+  } catch (e) {
+    console.log('incorrectly formatted JSON:', s);
+    return false;
+  }
+};
+
 async function main() {
   const { MPC_PUBLIC_KEY, NEAR_ACCOUNT_ID, MPC_PATH } = process.env;
-  const { ea, ba, da, ra, s, etx, btx, dtx, rtx, to, amount } = options;
+  let {
+    ea,
+    ba,
+    da,
+    ra,
+    s,
+    etx,
+    btx,
+    dtx,
+    rtx,
+    edc,
+    view,
+    call,
+    to,
+    amount,
+    path,
+    method,
+    args,
+    retParams,
+  } = options;
 
   const genAddress = (chain) =>
     generateAddress({
@@ -39,6 +75,8 @@ async function main() {
       path: MPC_PATH,
       chain,
     });
+
+  // addresses
 
   if (ea) {
     const { address } = await genAddress('ethereum');
@@ -56,6 +94,9 @@ async function main() {
     const { address } = await genAddress('xrpLedger');
     console.log(address);
   }
+
+  // sample sign
+
   if (s) {
     const samplePayload = new Array(32);
     for (let i = 0; i < samplePayload.length; i++) {
@@ -64,6 +105,9 @@ async function main() {
     const res = await sign(samplePayload, MPC_PATH);
     console.log('signature', res);
   }
+
+  // send txs
+
   if (etx) {
     const { address } = await genAddress('ethereum');
     await ethereum.send({ from: address, to, amount });
@@ -79,6 +123,30 @@ async function main() {
   if (rtx) {
     const { address, publicKey } = await genAddress('xrpLedger');
     await xrpLedger.send({ from: address, publicKey, to, amount });
+  }
+
+  // contract deployment and interaction
+
+  // default: deploys nft contract
+  if (edc) {
+    const { address } = await genAddress('ethereum');
+    await ethereum.deployContract({ from: address, path });
+  }
+
+  args = tryParse(args);
+  if (args === false) process.exit();
+  retParams = tryParse(retParams);
+  if (retParams === false) process.exit();
+
+  // default: gets nft balance for address
+  if (view) {
+    await ethereum.view({ to, method, args, retParams });
+  }
+
+  // default: mints (tokenId++) edition of nft to address
+  if (call) {
+    const { address } = await genAddress('ethereum');
+    await ethereum.call({ from: address });
   }
 
   process.exit();
