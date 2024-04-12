@@ -95,6 +95,8 @@ Start by deploying a new NFT contract:
 
 1. `yarn start -d`
 
+Check explorer link and make sure contract is deployed successfully.
+
 Take contract address from console result and call:
 
 2. `yarn start -c --to 0x[CONTRACT ADDRESS FROM STEP 1]`
