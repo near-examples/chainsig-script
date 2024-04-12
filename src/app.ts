@@ -138,12 +138,12 @@ async function main() {
   retParams = tryParse(retParams);
   if (retParams === false) process.exit();
 
-  // default: gets nft balance for address
+  // default: gets nft balance for --args '{"address":"0x1234...."}'
   if (view) {
     await ethereum.view({ to, method, args, retParams });
   }
 
-  // default: mints (tokenId++) edition of nft to address
+  // default: mints (tokenId++) edition of nft to --args '{"address":"0x1234...."}'
   if (call) {
     const { address } = await genAddress('ethereum');
     await ethereum.call({ from: address });

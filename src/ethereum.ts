@@ -137,53 +137,28 @@ const ethereum = {
     retParams = ['uint256'],
   }) => {
     const provider = getSepoliaProvider();
-    const abi = [
-      `function ${method}(${Object.keys(args).join(
-        ',',
-      )}) returns (${retParams.join(',')})`,
-    ];
-    const iface = new ethers.utils.Interface(abi);
-    const allArgs = [];
-    const argValues = Object.values(args);
-    for (let i = 0; i < argValues.length; i++) {
-      allArgs.push(argValues[i]);
-    }
-    const data = iface.encodeFunctionData(method, allArgs);
-
-    console.log('view call', abi[0], 'to contract', to, 'with args', allArgs);
-
+    console.log('view contract', to);
+    const { data, iface } = encodeData({ method, args, retParams });
     const res = await provider.call({
       to,
       data,
     });
-
     const decoded = iface.decodeFunctionResult(method, res);
-
-    console.log('view call result', decoded.toString());
+    console.log('view result', decoded.toString());
   },
 
   call: async ({
     from: address,
     to = '0x09a1a4e1cfca73c2e4f6599a7e6b98708fda2664',
     method = 'mint',
-    args = [{ address: '0x525521d79134822a342d330bd91da67976569af1' }],
+    args = { address: '0x525521d79134822a342d330bd91da67976569af1' },
+    retParams = [],
   }) => {
     const { getGasPrice, completeEthereumTx, chainId } = ethereum;
 
     const provider = getSepoliaProvider();
-    const abi = [
-      `function ${method}(${args
-        .map((a, i) => Object.keys(a)[0] + ' ' + i)
-        .join(',')})`,
-    ];
-    const iface = new ethers.utils.Interface(abi);
-    const allArgs = [];
-    for (let i = 0; i < args.length; i++) {
-      allArgs.push(Object.values(args[i])[0]);
-    }
-    const data = iface.encodeFunctionData(method, allArgs);
-
-    console.log('calling', abi[0], 'to contract', to, 'with args', allArgs);
+    console.log('call contract', to);
+    const { data } = encodeData({ method, args, retParams });
 
     const cont = await prompts({
       type: 'confirm',
@@ -261,6 +236,27 @@ const ethereum = {
       console.log(e);
     }
   },
+};
+
+const encodeData = ({ method, args, retParams }) => {
+  const abi = [
+    `function ${method}(${Object.keys(args).join(
+      ',',
+    )}) returns (${retParams.join(',')})`,
+  ];
+  const iface = new ethers.utils.Interface(abi);
+  const allArgs = [];
+  const argValues = Object.values(args);
+  for (let i = 0; i < argValues.length; i++) {
+    allArgs.push(argValues[i]);
+  }
+
+  console.log(abi[0], 'with args', allArgs);
+
+  return {
+    iface,
+    data: iface.encodeFunctionData(method, allArgs),
+  };
 };
 
 const getSepoliaProvider = () => {
