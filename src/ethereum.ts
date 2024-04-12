@@ -134,11 +134,11 @@ const ethereum = {
     to = '0x09a1a4e1cfca73c2e4f6599a7e6b98708fda2664',
     method = 'balanceOf',
     args = { address: '0x525521d79134822a342d330bd91da67976569af1' },
-    retParams = ['uint256'],
+    ret = ['uint256'],
   }) => {
     const provider = getSepoliaProvider();
     console.log('view contract', to);
-    const { data, iface } = encodeData({ method, args, retParams });
+    const { data, iface } = encodeData({ method, args, ret });
     const res = await provider.call({
       to,
       data,
@@ -152,13 +152,13 @@ const ethereum = {
     to = '0x09a1a4e1cfca73c2e4f6599a7e6b98708fda2664',
     method = 'mint',
     args = { address: '0x525521d79134822a342d330bd91da67976569af1' },
-    retParams = [],
+    ret = [],
   }) => {
     const { getGasPrice, completeEthereumTx, chainId } = ethereum;
 
     const provider = getSepoliaProvider();
     console.log('call contract', to);
-    const { data } = encodeData({ method, args, retParams });
+    const { data } = encodeData({ method, args, ret });
 
     const cont = await prompts({
       type: 'confirm',
@@ -238,11 +238,11 @@ const ethereum = {
   },
 };
 
-const encodeData = ({ method, args, retParams }) => {
+const encodeData = ({ method, args, ret }) => {
   const abi = [
-    `function ${method}(${Object.keys(args).join(
+    `function ${method}(${Object.keys(args).join(',')}) returns (${ret.join(
       ',',
-    )}) returns (${retParams.join(',')})`,
+    )})`,
   ];
   const iface = new ethers.utils.Interface(abi);
   const allArgs = [];

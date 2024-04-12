@@ -69,8 +69,43 @@ TATUM_API_KEY=""
 
 ### Sending Options
 
-- -a, --amount - amount to send (ETH or sats)
-- -to, --to - destination address
+- --amount - amount to send (ETH or sats)
+- --to - destination address
+
+# EVM Contract Deployment and Interactions (advanced)
+
+Usage: `yarn start [commands]`
+
+### Command List
+
+- -d, -edc - deploy contract
+- --to - the contract address to view/call
+- -v, -view - view contract state (readonly call)
+- -c, -call - call contract method
+- --path - path to EVM bytecode file from root of this project
+- --method - name of method view/call
+- --args - arguments e.g. '{"address":"0x525521d79134822a342d330bd91da67976569af1"}' in single quotes
+- --ret - list of return parameter types (if any) e.g. ['uint256']
+
+## NFT Example
+
+After setting up all your environment variables and ensuring your calling EVM address has ETH for gas.
+
+Start by deploying a new NFT contract:
+
+1. `yarn start -d`
+
+Take contract address from console result and call:
+
+2. `yarn start -c --to 0x[CONTRACT ADDRESS FROM STEP 1]`
+
+This will mint a token to default address `0x525521d79134822a342d330bd91da67976569af1`.
+
+View the balanance of the default address using:
+
+3. `yarn start -v --to 0x[CONTRACT ADDRESS FROM STEP 1]`
+
+Which should output `1` the NFT balance of default address `0x525521d79134822a342d330bd91da67976569af1`
 
 # References & Useful Links
 

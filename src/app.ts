@@ -16,15 +16,17 @@ program
   .option('-btx')
   .option('-dtx')
   .option('-rtx')
-  .option('-edc')
-  .option('-view')
-  .option('-call')
-  .option('-a, --amount <char>')
-  .option('-t, --to <char>')
-  .option('-p, --path <char>')
-  .option('-m, --method <char>')
+  // EVM contracts
+  .option('-d, -edc')
+  .option('-v, -view')
+  .option('-c, -call')
+  .option('--amount <char>')
+  .option('--to <char>')
+  // EVM contracts
+  .option('--path <char>')
+  .option('--method <char>')
   .option('--args <char>')
-  .option('-rp, --retParams <char>');
+  .option('--ret <char>');
 
 program.parse();
 
@@ -65,7 +67,7 @@ async function main() {
     path,
     method,
     args,
-    retParams,
+    ret,
   } = options;
 
   const genAddress = (chain) =>
@@ -135,18 +137,18 @@ async function main() {
 
   args = tryParse(args);
   if (args === false) process.exit();
-  retParams = tryParse(retParams);
-  if (retParams === false) process.exit();
+  ret = tryParse(ret);
+  if (ret === false) process.exit();
 
   // default: gets nft balance for --args '{"address":"0x1234...."}'
   if (view) {
-    await ethereum.view({ to, method, args, retParams });
+    await ethereum.view({ to, method, args, ret });
   }
 
   // default: mints (tokenId++) edition of nft to --args '{"address":"0x1234...."}'
   if (call) {
     const { address } = await genAddress('ethereum');
-    await ethereum.call({ from: address });
+    await ethereum.call({ to, method, args, ret, from: address });
   }
 
   process.exit();
