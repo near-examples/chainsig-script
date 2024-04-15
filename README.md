@@ -133,6 +133,19 @@ The Near contract has the following features:
 3. `COST` must be paid in Near
 4. `path` and `key_version` arguments are passed through to MPC `sign` call, but in the future could be used as additional features for applications or security
 
+To use, set the following `.env` vars accordingly:
+
+```
+NEAR_PROXY="true"
+NEAR_PROXY_ACCOUNT_ID="futuristic-anger.testnet"
+NEAR_PROXY_PRIVATE_KEY="ed25519:2zB7mR9Pw6ZitwNLbGyJe5uRiEB42MhgF3wNYS2iPDwB9KiebaaJPCT7W1A6vHBiSVE7cju3i6dYcoqHr5bVCkWV"
+NEAR_CALL_PROXY_NON_OWNER="true"
+```
+
+NEAR_PROXY will use the proxy account and private key.
+
+NEAR_CALL_PROXY_NON_OWNER will use the NEAR_ACCOUNT_ID but it will call through the proxy contract e.g. pay 1 N to call this EVM contract.
+
 # References & Useful Links
 
 ### Examples
