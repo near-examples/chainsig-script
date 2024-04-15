@@ -109,6 +109,30 @@ View the balanance of the default address using:
 
 Which should output `1` the NFT balance of default address `0x525521d79134822a342d330bd91da67976569af1`
 
+# Proxy call MPC sign from Near Contract (advanced)
+
+To deploy the Near contract use `cargo-near`.
+
+Install `cargo-near` and `near-cli`
+
+- [cargo-near](https://github.com/near/cargo-near) - NEAR smart contract development toolkit for Rust
+- [near CLI-rs](https://near.cli.rs) - Iteract with NEAR blockchain from command line
+
+```
+cargo build
+
+cargo near create-dev-account
+
+cargo near deploy [ACCOUNT_ID]
+```
+
+The Near contract has the following features:
+
+1. `sign` method accepts a payload that is the unhashed RLP encoded EVM transaction data e.g. `6a627842000000000000000000000000525521d79134822a342d330bd91DA67976569aF1` calls the method `mint` with an address argument of `525521d79134822a342d330bd91DA67976569aF1`
+2. `PUBLIC_RLP_ENCODED_METHOD_NAMES` stores public EVM method name hashes that can be called from this Near contract to the destination address e.g. the method name `mint` hashes `6a627842000000000000000000000000`
+3. `COST` must be paid in Near
+4. `path` and `key_version` arguments are passed through to MPC `sign` call, but in the future could be used as additional features for applications or security
+
 # References & Useful Links
 
 ### Examples

@@ -7,6 +7,7 @@ import bitcoin from './bitcoin';
 import xrpLedger from './xrpLedger';
 
 program
+  .option('-p')
   .option('-ea')
   .option('-ba')
   .option('-da')
@@ -48,7 +49,14 @@ const tryParse = (s) => {
 };
 
 async function main() {
-  const { MPC_PUBLIC_KEY, NEAR_ACCOUNT_ID, MPC_PATH } = process.env;
+  const {
+    MPC_PUBLIC_KEY,
+    NEAR_ACCOUNT_ID,
+    MPC_PATH,
+    NEAR_PROXY,
+    NEAR_PROXY_ACCOUNT_ID,
+  } = process.env;
+
   let {
     ea,
     ba,
@@ -70,10 +78,17 @@ async function main() {
     ret,
   } = options;
 
+  // TODO
+
+  // command to diff between proxy near contract depoloyment and real
+
+  // fix near.ts (hardcoded using proxy address)
+
   const genAddress = (chain) =>
     generateAddress({
       publicKey: MPC_PUBLIC_KEY,
-      accountId: NEAR_ACCOUNT_ID,
+      accountId:
+        NEAR_PROXY === 'true' ? NEAR_PROXY_ACCOUNT_ID : NEAR_ACCOUNT_ID,
       path: MPC_PATH,
       chain,
     });

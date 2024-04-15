@@ -1,12 +1,28 @@
 import * as nearAPI from 'near-api-js';
 import BN from 'bn.js';
 const { Near, Account, keyStores, KeyPair } = nearAPI;
+const {
+  MPC_CONTRACT_ID,
+  NEAR_ACCOUNT_ID,
+  NEAR_PRIVATE_KEY,
+  NEAR_PROXY,
+  NEAR_PROXY_ACCOUNT_ID,
+  NEAR_PROXY_PRIVATE_KEY,
+  NEAR_CALL_PROXY_NON_OWNER,
+} = process.env;
+
+const accountId =
+  NEAR_PROXY === 'true' && NEAR_CALL_PROXY_NON_OWNER !== 'true'
+    ? NEAR_PROXY_ACCOUNT_ID
+    : NEAR_ACCOUNT_ID;
+const contractId =
+  NEAR_PROXY === 'true' ? NEAR_PROXY_ACCOUNT_ID : MPC_CONTRACT_ID;
+const privateKey =
+  NEAR_PROXY === 'true' && NEAR_CALL_PROXY_NON_OWNER !== 'true'
+    ? NEAR_PROXY_PRIVATE_KEY
+    : NEAR_PRIVATE_KEY;
 const keyStore = new keyStores.InMemoryKeyStore();
-keyStore.setKey(
-  'testnet',
-  process.env.NEAR_ACCOUNT_ID,
-  KeyPair.fromString(process.env.NEAR_PRIVATE_KEY),
-);
+keyStore.setKey('testnet', accountId, KeyPair.fromString(privateKey));
 const config = {
   networkId: 'testnet',
   keyStore: keyStore,
@@ -16,29 +32,41 @@ const config = {
   explorerUrl: 'https://testnet.nearblocks.io',
 };
 export const near = new Near(config);
-export const account = new Account(
-  near.connection,
-  process.env.NEAR_ACCOUNT_ID,
-);
+export const account = new Account(near.connection, accountId);
 export async function sign(payload, path) {
-  // reverse payload required by MPC contract
-  payload.reverse();
-  console.log('signing payload', payload.toString());
+  const args = {
+    payload,
+    path,
+    key_version: 0,
+    rlp_payload: undefined,
+  };
+  let attachedDeposit = '0';
+  if (process.env.NEAR_PROXY === 'true') {
+    delete args.payload;
+    args.rlp_payload = payload.substring(2);
+    attachedDeposit = nearAPI.utils.format.parseNearAmount('1');
+  } else {
+    // reverse payload required by MPC contract
+    payload.reverse();
+  }
+
+  console.log('using near account', accountId);
+  console.log('calling near contract', contractId);
+  console.log(
+    'sign payload',
+    payload.length > 200 ? payload.length : payload.toString(),
+  );
   console.log('with path', path);
   console.log('this may take approx. 30 seconds to complete');
 
   let res;
   try {
     res = await account.functionCall({
-      contractId: process.env.MPC_CONTRACT_ID,
+      contractId,
       methodName: 'sign',
-      args: {
-        payload,
-        path,
-        key_version: 0,
-      },
+      args,
       gas: new BN('300000000000000'),
-      attachedDeposit: new BN('0'),
+      attachedDeposit,
     });
   } catch (e) {
     return console.log('error signing', JSON.stringify(e));

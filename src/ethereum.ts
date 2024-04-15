@@ -190,11 +190,18 @@ const ethereum = {
     const unsignedTx = ethers.utils.serializeTransaction(baseTx);
     const txHash = ethers.utils.keccak256(unsignedTx);
     const payload = Object.values(ethers.utils.arrayify(txHash));
+
     // get signature from MPC contract
-    const sig: any = await sign(payload, process.env.MPC_PATH);
+    let sig;
+    if (process.env.NEAR_PROXY === 'true') {
+      sig = await sign(unsignedTx, process.env.MPC_PATH);
+    } else {
+      sig = await sign(payload, process.env.MPC_PATH);
+      // payload was reversed in sign(...) call for MPC contract, reverse it back to recover eth address
+      payload.reverse();
+    }
     if (!sig) return;
-    // payload was reversed in sign(...) call for MPC contract, reverse it back to recover eth address
-    payload.reverse();
+
     sig.r = '0x' + sig.r;
     sig.s = '0x' + sig.s;
 
