@@ -1,6 +1,6 @@
 import { program } from 'commander';
 import { generateAddress } from './kdf';
-import { sign } from './near';
+import { sign, account } from './near';
 import dogecoin from './dogecoin';
 import ethereum from './ethereum';
 import bitcoin from './bitcoin';
@@ -48,53 +48,56 @@ const tryParse = (s) => {
   }
 };
 
+const {
+  MPC_PUBLIC_KEY,
+  NEAR_ACCOUNT_ID,
+  MPC_PATH,
+  MPC_CONTRACT_ID,
+  NEAR_PROXY,
+  NEAR_PROXY_ACCOUNT_ID,
+} = process.env;
+
+let {
+  p,
+  ea,
+  ba,
+  da,
+  ra,
+  s,
+  etx,
+  btx,
+  dtx,
+  rtx,
+  edc,
+  view,
+  call,
+  to,
+  amount,
+  path,
+  method,
+  args,
+  ret,
+} = options;
+
+const genAddress = (chain) =>
+  generateAddress({
+    publicKey: MPC_PUBLIC_KEY,
+    accountId: NEAR_PROXY === 'true' ? NEAR_PROXY_ACCOUNT_ID : NEAR_ACCOUNT_ID,
+    path: MPC_PATH,
+    chain,
+  });
+
 async function main() {
-  const {
-    MPC_PUBLIC_KEY,
-    NEAR_ACCOUNT_ID,
-    MPC_PATH,
-    NEAR_PROXY,
-    NEAR_PROXY_ACCOUNT_ID,
-  } = process.env;
-
-  let {
-    ea,
-    ba,
-    da,
-    ra,
-    s,
-    etx,
-    btx,
-    dtx,
-    rtx,
-    edc,
-    view,
-    call,
-    to,
-    amount,
-    path,
-    method,
-    args,
-    ret,
-  } = options;
-
-  // TODO
-
-  // command to diff between proxy near contract depoloyment and real
-
-  // fix near.ts (hardcoded using proxy address)
-
-  const genAddress = (chain) =>
-    generateAddress({
-      publicKey: MPC_PUBLIC_KEY,
-      accountId:
-        NEAR_PROXY === 'true' ? NEAR_PROXY_ACCOUNT_ID : NEAR_ACCOUNT_ID,
-      path: MPC_PATH,
-      chain,
+  // mpc public key
+  if (p) {
+    const public_key = await account.viewFunction({
+      contractId: MPC_CONTRACT_ID,
+      methodName: 'public_key',
     });
+    console.log(public_key);
+  }
 
   // addresses
-
   if (ea) {
     const { address } = await genAddress('ethereum');
     console.log(address);
@@ -124,7 +127,6 @@ async function main() {
   }
 
   // send txs
-
   if (etx) {
     const { address } = await genAddress('ethereum');
     await ethereum.send({ from: address, to, amount });
