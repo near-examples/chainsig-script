@@ -5,24 +5,25 @@ const {
   MPC_CONTRACT_ID,
   NEAR_ACCOUNT_ID,
   NEAR_PRIVATE_KEY,
-  NEAR_PROXY,
+  NEAR_PROXY_ACCOUNT,
+  NEAR_PROXY_CONTRACT,
   NEAR_PROXY_ACCOUNT_ID,
   NEAR_PROXY_PRIVATE_KEY,
-  NEAR_CALL_PROXY_NON_OWNER,
 } = process.env;
 
 const accountId =
-  NEAR_PROXY === 'true' && NEAR_CALL_PROXY_NON_OWNER !== 'true'
-    ? NEAR_PROXY_ACCOUNT_ID
-    : NEAR_ACCOUNT_ID;
+  NEAR_PROXY_ACCOUNT === 'true' ? NEAR_PROXY_ACCOUNT_ID : NEAR_ACCOUNT_ID;
 const contractId =
-  NEAR_PROXY === 'true' ? NEAR_PROXY_ACCOUNT_ID : MPC_CONTRACT_ID;
+  NEAR_PROXY_CONTRACT === 'true' ? NEAR_PROXY_ACCOUNT_ID : MPC_CONTRACT_ID;
 const privateKey =
-  NEAR_PROXY === 'true' && NEAR_CALL_PROXY_NON_OWNER !== 'true'
-    ? NEAR_PROXY_PRIVATE_KEY
-    : NEAR_PRIVATE_KEY;
+  NEAR_PROXY_ACCOUNT === 'true' ? NEAR_PROXY_PRIVATE_KEY : NEAR_PRIVATE_KEY;
 const keyStore = new keyStores.InMemoryKeyStore();
 keyStore.setKey('testnet', accountId, KeyPair.fromString(privateKey));
+
+console.log('Near Chain Signature (NCS) call details:');
+console.log('Near accountId', accountId);
+console.log('NCS contractId', contractId);
+
 const config = {
   networkId: 'testnet',
   keyStore: keyStore,
@@ -41,7 +42,8 @@ export async function sign(payload, path) {
     rlp_payload: undefined,
   };
   let attachedDeposit = '0';
-  if (process.env.NEAR_PROXY === 'true') {
+
+  if (process.env.NEAR_PROXY_CONTRACT === 'true') {
     delete args.payload;
     args.rlp_payload = payload.substring(2);
     attachedDeposit = nearAPI.utils.format.parseNearAmount('1');
@@ -50,8 +52,6 @@ export async function sign(payload, path) {
     payload.reverse();
   }
 
-  console.log('using near account', accountId);
-  console.log('calling near contract', contractId);
   console.log(
     'sign payload',
     payload.length > 200 ? payload.length : payload.toString(),

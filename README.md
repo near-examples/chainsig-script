@@ -136,15 +136,39 @@ The Near contract has the following features:
 To use, set the following `.env` vars accordingly:
 
 ```
-NEAR_PROXY="true"
+NEAR_PROXY_ACCOUNT="true"
+NEAR_PROXY_CONTRACT="true"
 NEAR_PROXY_ACCOUNT_ID="futuristic-anger.testnet"
-NEAR_PROXY_PRIVATE_KEY="ed25519:2zB7mR9Pw6ZitwNLbGyJe5uRiEB42MhgF3wNYS2iPDwB9KiebaaJPCT7W1A6vHBiSVE7cju3i6dYcoqHr5bVCkWV"
-NEAR_CALL_PROXY_NON_OWNER="true"
+NEAR_PROXY_PRIVATE_KEY="ed25519:..."
 ```
 
-NEAR_PROXY will use the proxy account and private key.
+With `NEAR_PROXY_CONTRACT="true"` the script will call `sign` method of the proxy contract you deployed using `cargo near deploy`.
 
-NEAR_CALL_PROXY_NON_OWNER will use the NEAR_ACCOUNT_ID but it will call through the proxy contract e.g. pay 1 N to call this EVM contract.
+To verify, send some ETH using `yarn start -etx`.
+
+With `NEAR_PROXY_ACCOUNT="false"` you will not be able to send ETH using the `sign` method of the proxy contract. Why? Because this would mean any Near account can send ETH from the derived account of the proxy contract. Oh no! The proxy contract protects against arbitrary transactions using this check:
+
+```
+let owner = env::predecessor_account_id() == env::current_account_id();
+
+// check if rlp encoded eth transaction is calling a public method name
+let mut public = false;
+for n in PUBLIC_RLP_ENCODED_METHOD_NAMES {
+	if rlp_payload.find(n).is_some() {
+		public = true
+	}
+}
+
+// only the Near contract owner can call sign of arbitrary payloads for chain signature accounts based on env::current_account_id()
+if !public {
+	require!(
+		owner,
+		"only contract owner can sign arbitrary EVM transactions"
+	);
+}
+```
+
+Enjoy!
 
 # References & Useful Links
 

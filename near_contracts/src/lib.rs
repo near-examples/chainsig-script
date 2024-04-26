@@ -3,7 +3,7 @@ use hex::decode;
 use near_sdk::{env, ext_contract, near, require, Gas, NearToken, Promise};
 
 const PUBLIC_RLP_ENCODED_METHOD_NAMES: [&'static str; 1] = ["6a627842000000000000000000000000"];
-const MPC_CONTRACT_ACCOUNT_ID: &str = "multichain-testnet-2.testnet";
+const MPC_CONTRACT_ACCOUNT_ID: &str = "v2.multichain-mpc.testnet";
 const COST: NearToken = NearToken::from_near(1);
 
 // interface for cross contract call to mpc contract

@@ -4,6 +4,7 @@ import BN from 'bn.js';
 import { fetchJson } from './utils';
 import prompts from 'prompts';
 import { sign } from './near';
+const { MPC_PATH, NEAR_PROXY_CONTRACT } = process.env;
 
 const ethereum = {
   name: 'Sepolia',
@@ -193,10 +194,10 @@ const ethereum = {
 
     // get signature from MPC contract
     let sig;
-    if (process.env.NEAR_PROXY === 'true') {
-      sig = await sign(unsignedTx, process.env.MPC_PATH);
+    if (NEAR_PROXY_CONTRACT === 'true') {
+      sig = await sign(unsignedTx, MPC_PATH);
     } else {
-      sig = await sign(payload, process.env.MPC_PATH);
+      sig = await sign(payload, MPC_PATH);
       // payload was reversed in sign(...) call for MPC contract, reverse it back to recover eth address
       payload.reverse();
     }
@@ -210,7 +211,6 @@ const ethereum = {
     for (let v = 0; v < 2; v++) {
       sig.v = v + chainId * 2 + 35;
       const recoveredAddress = ethers.utils.recoverAddress(payload, sig);
-      console.log('recoveredAddress', recoveredAddress);
       if (recoveredAddress.toLowerCase() === address.toLowerCase()) {
         addressRecovered = true;
         break;
@@ -220,8 +220,7 @@ const ethereum = {
       return console.log('signature failed to recover correct sending address');
     }
 
-    // signature now has correct { r, s, v }
-    // broadcast TX
+    // broadcast TX - signature now has correct { r, s, v }
     try {
       const hash = await getSepoliaProvider().send('eth_sendRawTransaction', [
         ethers.utils.serializeTransaction(baseTx, sig),

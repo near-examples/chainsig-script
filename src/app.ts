@@ -53,7 +53,8 @@ const {
   NEAR_ACCOUNT_ID,
   MPC_PATH,
   MPC_CONTRACT_ID,
-  NEAR_PROXY,
+  NEAR_PROXY_ACCOUNT,
+  NEAR_PROXY_CONTRACT,
   NEAR_PROXY_ACCOUNT_ID,
 } = process.env;
 
@@ -79,13 +80,16 @@ let {
   ret,
 } = options;
 
-const genAddress = (chain) =>
-  generateAddress({
+export const genAddress = (chain) => {
+  let accountId =
+    NEAR_PROXY_ACCOUNT === 'true' ? NEAR_PROXY_ACCOUNT_ID : NEAR_ACCOUNT_ID;
+  return generateAddress({
     publicKey: MPC_PUBLIC_KEY,
-    accountId: NEAR_PROXY === 'true' ? NEAR_PROXY_ACCOUNT_ID : NEAR_ACCOUNT_ID,
+    accountId,
     path: MPC_PATH,
     chain,
   });
+};
 
 async function main() {
   // mpc public key
