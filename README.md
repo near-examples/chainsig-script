@@ -2,9 +2,16 @@
 
 ### ⚠️⚠️⚠️ Caution! This is beta / testnet technology ⚠️⚠️⚠️
 
-Near's MPC allows a Near Account to create derivative accounts (public keys) and signatures of transactions for other blockchains.
+## WIP - TODO
 
-Several MPC nodes maintain a single public key. This key is combined with your Near AccountId (unique) and a chosen "path" offset (chosen by client). This produces a new and unique public key. The generation of signatures via the MPC nodes can only be authorized by same Near Account by calling the `sign` method of the MPC contract.
+- better documentation for contract to contract example
+- document Rust contract for contract to contract example
+
+# Introduction
+
+NEAR's MPC allows a NEAR Account to create derivative accounts (public keys) and signatures of transactions for other blockchains.
+
+Several MPC nodes maintain a single public key. This key is combined with your NEAR AccountId (unique) and a chosen "path" offset (chosen by client). This produces a new and unique public key. The generation of signatures via the MPC nodes can only be authorized by same NEAR Account by calling the `sign` method of the MPC contract.
 
 The creation of secp256k1 public keys for Bitcoin and EVM chains is currently supported.
 
@@ -61,7 +68,7 @@ TATUM_API_KEY=""
 - -ba - bitcoin testnet address
 - -da - dogecoin testnet address
 - -ra - ripple testnet address
-- -s - sign sample payload using Near account
+- -s - sign sample payload using NEAR account
 - -etx - send ETH
 - -btx - send BTC
 - -dtx - send DOGE (requires API KEY)
@@ -109,9 +116,9 @@ View the balanance of the default address using:
 
 Which should output `1` the NFT balance of default address `0x525521d79134822a342d330bd91da67976569af1`
 
-# Proxy call MPC sign from Near Contract (advanced)
+# Proxy call MPC sign from NEAR Contract (advanced)
 
-To deploy the Near contract use `cargo-near`.
+To deploy the NEAR contract use `cargo-near`.
 
 Install `cargo-near` and `near-cli`
 
@@ -126,11 +133,11 @@ cargo near create-dev-account
 cargo near deploy [ACCOUNT_ID]
 ```
 
-The Near contract has the following features:
+The NEAR contract has the following features:
 
 1. `sign` method accepts a payload that is the unhashed RLP encoded EVM transaction data e.g. `6a627842000000000000000000000000525521d79134822a342d330bd91DA67976569aF1` calls the method `mint` with an address argument of `525521d79134822a342d330bd91DA67976569aF1`
-2. `PUBLIC_RLP_ENCODED_METHOD_NAMES` stores public EVM method name hashes that can be called from this Near contract to the destination address e.g. the method name `mint` hashes `6a627842000000000000000000000000`
-3. `COST` must be paid in Near
+2. `PUBLIC_RLP_ENCODED_METHOD_NAMES` stores public EVM method name hashes that can be called from this NEAR contract to the destination address e.g. the method name `mint` hashes `6a627842000000000000000000000000`
+3. `COST` must be paid in NEAR
 4. `path` and `key_version` arguments are passed through to MPC `sign` call, but in the future could be used as additional features for applications or security
 
 To use, set the following `.env` vars accordingly:
@@ -146,7 +153,7 @@ With `NEAR_PROXY_CONTRACT="true"` the script will call `sign` method of the prox
 
 To verify, send some ETH using `yarn start -etx`.
 
-With `NEAR_PROXY_ACCOUNT="false"` you will not be able to send ETH using the `sign` method of the proxy contract. Why? Because this would mean any Near account can send ETH from the derived account of the proxy contract. Oh no! The proxy contract protects against arbitrary transactions using this check:
+With `NEAR_PROXY_ACCOUNT="false"` you will not be able to send ETH using the `sign` method of the proxy contract. Why? Because this would mean any NEAR account can send ETH from the derived account of the proxy contract. Oh no! The proxy contract protects against arbitrary transactions using this check:
 
 ```
 let owner = env::predecessor_account_id() == env::current_account_id();
@@ -159,7 +166,7 @@ for n in PUBLIC_RLP_ENCODED_METHOD_NAMES {
 	}
 }
 
-// only the Near contract owner can call sign of arbitrary payloads for chain signature accounts based on env::current_account_id()
+// only the NEAR contract owner can call sign of arbitrary payloads for chain signature accounts based on env::current_account_id()
 if !public {
 	require!(
 		owner,
@@ -174,7 +181,7 @@ Enjoy!
 
 ### Examples
 
-[Live Example - Near Testnet, Sepolia, Bitcoin Testnet](https://test.near.social/md1.testnet/widget/chainsig-sign-eth-tx)
+[Live Example - NEAR Testnet, Sepolia, Bitcoin Testnet](https://test.near.social/md1.testnet/widget/chainsig-sign-eth-tx)
 
 [A frontend example you can run locally](https://github.com/gagdiez/near-multichain)
 
