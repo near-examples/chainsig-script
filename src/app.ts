@@ -137,6 +137,7 @@ async function main() {
   }
   if (btx) {
     const { address, publicKey } = await genAddress('bitcoin');
+    console.log(address, publicKey);
     await bitcoin.send({ from: address, publicKey, to, amount });
   }
   if (dtx) {

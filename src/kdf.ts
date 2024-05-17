@@ -111,10 +111,16 @@ export async function generateAddress({ publicKey, accountId, path, chain }) {
       address = uncompressedHexPointToEvmAddress(childPublicKey);
       break;
     case 'btc':
-      uncompressedHexPointToBtcAddress(childPublicKey, Buffer.from([0x00]));
+      address = uncompressedHexPointToBtcAddress(
+        childPublicKey,
+        Buffer.from([0x00]),
+      );
       break;
     case 'bitcoin':
-      uncompressedHexPointToBtcAddress(childPublicKey, Buffer.from([0x6f]));
+      address = uncompressedHexPointToBtcAddress(
+        childPublicKey,
+        Buffer.from([0x6f]),
+      );
       break;
     case 'dogecoin':
       address = uncompressedHexPointToBtcAddress(
