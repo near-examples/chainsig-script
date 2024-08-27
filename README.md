@@ -37,6 +37,7 @@ MPC_PATH="[MPC_PATH]"
 MPC_CHAIN="[ethereum|bitcoin]"
 MPC_CONTRACT_ID="multichain-testnet-2.testnet"
 MPC_PUBLIC_KEY="secp256k1:4HFcTSodRLVCGNVcGc4Mf2fwBBBxv9jxkGdiW2S2CA1y6UpVVRWKj6RX7d7TDt65k2Bj3w9FU4BGtt43ZvuhCnNt"
+COSMOS_RELAYER_MNEMONIC=foo bar
 ```
 
 ### For dogecoin testnet (link below)
