@@ -4,8 +4,8 @@
 
 ## WIP - TODO
 
-- better documentation for contract to contract example
-- document Rust contract for contract to contract example
+-   better documentation for contract to contract example
+-   document Rust contract for contract to contract example
 
 # Introduction
 
@@ -64,20 +64,20 @@ TATUM_API_KEY=""
 
 ### Command List
 
-- -ea - ethereum addressm (EVM)
-- -ba - bitcoin testnet address
-- -da - dogecoin testnet address
-- -ra - ripple testnet address
-- -s - sign sample payload using NEAR account
-- -etx - send ETH
-- -btx - send BTC
-- -dtx - send DOGE (requires API KEY)
-- -rtx - send XRP
+-   -ea - ethereum addressm (EVM)
+-   -ba - bitcoin testnet address
+-   -da - dogecoin testnet address
+-   -ra - ripple testnet address
+-   -s - sign sample payload using NEAR account
+-   -etx - send ETH
+-   -btx - send BTC
+-   -dtx - send DOGE (requires API KEY)
+-   -rtx - send XRP
 
 ### Sending Options
 
-- --amount - amount to send (ETH or sats)
-- --to - destination address
+-   --amount - amount to send (ETH or sats)
+-   --to - destination address
 
 # EVM Contract Deployment and Interactions (advanced)
 
@@ -85,14 +85,14 @@ Usage: `yarn start [commands]`
 
 ### Command List
 
-- -d, -edc - deploy contract
-- --to - the contract address to view/call
-- -v, -view - view contract state (readonly call)
-- -c, -call - call contract method
-- --path - path to EVM bytecode file from root of this project
-- --method - name of method view/call
-- --args - arguments e.g. '{"address":"0x525521d79134822a342d330bd91da67976569af1"}' in single quotes
-- --ret - list of return parameter types (if any) e.g. ['uint256']
+-   -d, -edc - deploy contract
+-   --to - the contract address to view/call
+-   -v, -view - view contract state (readonly call)
+-   -c, -call - call contract method
+-   --path - path to EVM bytecode file from root of this project
+-   --method - name of method view/call
+-   --args - arguments e.g. '{"address":"0x525521d79134822a342d330bd91da67976569af1"}' in single quotes
+-   --ret - list of return parameter types (if any) e.g. ['uint256']
 
 ## NFT Example
 
@@ -122,8 +122,8 @@ To deploy the NEAR contract use `cargo-near`.
 
 Install `cargo-near` and `near-cli`
 
-- [cargo-near](https://github.com/near/cargo-near) - NEAR smart contract development toolkit for Rust
-- [near CLI-rs](https://near.cli.rs) - Iteract with NEAR blockchain from command line
+-   [cargo-near](https://github.com/near/cargo-near) - NEAR smart contract development toolkit for Rust
+-   [near CLI-rs](https://near.cli.rs) - Iteract with NEAR blockchain from command line
 
 ```
 cargo build
@@ -200,6 +200,8 @@ Enjoy!
 ### Faucets and API Keys
 
 [Sepolia Faucet](https://sepolia-faucet.pk910.de/)
+
+[Sepolia Faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia)
 
 [Bitcoin Testnet Faucet](https://faucet.triangleplatform.com/bitcoin/testnet)
 
