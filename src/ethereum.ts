@@ -69,7 +69,7 @@ const ethereum = {
                 ),
             )
         ) {
-            return console.log('insufficient funds');
+            return console.log('insufficient funds in address', address);
         }
 
         console.log('sending', amount, currency, 'from', address, 'to', to);

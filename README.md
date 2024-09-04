@@ -94,7 +94,7 @@ Usage: `yarn start [commands]`
 -   --args - arguments e.g. '{"address":"0x525521d79134822a342d330bd91da67976569af1"}' in single quotes
 -   --ret - list of return parameter types (if any) e.g. ['uint256']
 
-## NFT Example
+## Ethereum EVM Contract NFT Example
 
 After setting up all your environment variables and ensuring your calling EVM address has ETH for gas.
 
@@ -104,19 +104,23 @@ Start by deploying a new NFT contract:
 
 Check explorer link and make sure contract is deployed successfully.
 
-Take contract address from console result and call:
+Take your contract address from console result and call:
 
 2. `yarn start -c --to 0x[CONTRACT ADDRESS FROM STEP 1]`
 
 This will mint a token to default address `0x525521d79134822a342d330bd91da67976569af1`.
 
-View the balanance of the default address using:
+To mint a token to a different address use `--args '{"address":"0x[SOME_OTHER_ADDRESS]"}'` with your args in single quotes and properly formatted JSON paths and values in double quotes.
+
+View the balance of the **default address** using:
 
 3. `yarn start -v --to 0x[CONTRACT ADDRESS FROM STEP 1]`
 
 Which should output `1` the NFT balance of default address `0x525521d79134822a342d330bd91da67976569af1`
 
-# Proxy call MPC sign from NEAR Contract (advanced)
+To view the balance of a different address use `--args '{"address":"0x[SOME_OTHER_ADDRESS]"}'` with your args in single quotes and properly formatted JSON paths and values in double quotes.
+
+# Proxy call MPC sign from NEAR Contract and use signature to call 'mint' on EVM Contract (advanced)
 
 To deploy the NEAR contract use `cargo-near`.
 
@@ -174,6 +178,37 @@ if !public {
 	);
 }
 ```
+
+## Testing the Proxy call and minting the NFT on the EVM Contract
+
+1. Your contract should be deployed and you should have the following env vars:
+
+NEAR_PROXY_ACCOUNT="true"
+NEAR_PROXY_CONTRACT="true"
+NEAR_PROXY_ACCOUNT_ID="..."
+NEAR_PROXY_PRIVATE_KEY="ed25519:..."
+
+2. Call `yarn start -etx` you are now deriving an Ethereum address using the NEAR Account ID of the NEAR Proxy Contract, not your NEAR Account ID
+
+This Ethereum address is different and unfunded. So, this transaction will not work.
+
+3. Fund the address from step 2. You can do this by sending ETH using this script.
+
+Change env vars:
+
+NEAR_PROXY_ACCOUNT="false"
+NEAR_PROXY_CONTRACT="false"
+
+Send ETH to your new derived Ethereum address:
+
+`yarn start -etx --to 0x[ADDRESS FROM STEP 2] --amount [AMOUNT IN ETH e.g. 0.1]`
+
+4. Now you can repeat the steps from **Ethereum EVM Contract NFT Example** above.
+
+## Key Points
+
+1. To use the NEAR Contract, when you are not the NEAR Contract owner, the NEAR transaction requires `1 NEAR` token
+2. The Ethereum transaction always uses gas from the same account derived from = NEAR_PROXY_ACCOUNT_ID + MPC_PATH (+ MPC_PUBLIC_KEY)
 
 Enjoy!
 

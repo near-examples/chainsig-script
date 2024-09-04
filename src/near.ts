@@ -36,11 +36,12 @@ export const near = new Near(config);
 export const account = new Account(near.connection, accountId);
 
 export async function sign(payload, path) {
-    const args = {
+    let args = {
         payload,
         path,
         key_version: 0,
         rlp_payload: undefined,
+        request: undefined,
     };
     let attachedDeposit = '1';
 
@@ -48,6 +49,10 @@ export async function sign(payload, path) {
         delete args.payload;
         args.rlp_payload = payload.substring(2);
         attachedDeposit = nearAPI.utils.format.parseNearAmount('1');
+    } else {
+        args = {
+            request: args,
+        } as any;
     }
 
     console.log(
@@ -62,9 +67,7 @@ export async function sign(payload, path) {
         res = await account.functionCall({
             contractId,
             methodName: 'sign',
-            args: {
-                request: args,
-            },
+            args,
             gas: new BN('300000000000000'),
             attachedDeposit,
         });

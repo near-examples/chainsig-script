@@ -1,15 +1,22 @@
 // Find all our documentation at https://docs.near.org
 use hex::decode;
 use near_sdk::{env, ext_contract, near, require, Gas, NearToken, Promise};
+use serde::Serialize;
 
 const PUBLIC_RLP_ENCODED_METHOD_NAMES: [&'static str; 1] = ["6a627842000000000000000000000000"];
-const MPC_CONTRACT_ACCOUNT_ID: &str = "v2.multichain-mpc.testnet";
+const MPC_CONTRACT_ACCOUNT_ID: &str = "v1.signer-dev.testnet";
 const COST: NearToken = NearToken::from_near(1);
 
+#[derive(Serialize)]
+pub struct SignRequest {
+    pub payload: [u8; 32],
+    pub path: String,
+    pub key_version: u32,
+}
 // interface for cross contract call to mpc contract
 #[ext_contract(mpc)]
 trait MPC {
-    fn sign(&self, payload: [u8; 32], path: String, key_version: u32) -> Promise;
+    fn sign(&self, request: SignRequest) -> Promise;
 }
 
 // automatically init the contract
@@ -47,9 +54,6 @@ impl Contract {
 
         // hash and reverse rlp encoded payload
         let payload: [u8; 32] = env::keccak256_array(&decode(rlp_payload).unwrap())
-            .into_iter()
-            .rev()
-            .collect::<Vec<u8>>()
             .try_into()
             .unwrap();
 
@@ -62,6 +66,11 @@ impl Contract {
         // call mpc sign and return promise
         mpc::ext(MPC_CONTRACT_ACCOUNT_ID.parse().unwrap())
             .with_static_gas(Gas::from_tgas(100))
-            .sign(payload, path, key_version)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .sign(SignRequest {
+                payload,
+                path,
+                key_version,
+            })
     }
 }
