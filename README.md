@@ -2,18 +2,15 @@
 
 ### ⚠️⚠️⚠️ Caution! This is beta / testnet technology ⚠️⚠️⚠️
 
-## WIP - TODO
-
--   better documentation for contract to contract example
--   document Rust contract for contract to contract example
+[Official Documentation](https://docs.near.org/build/chain-abstraction/chain-signatures)
 
 # Introduction
 
-NEAR's MPC allows a NEAR Account to create derivative accounts (public keys) and signatures of transactions for other blockchains.
+NEAR's MPC allows a NEAR account to create derivative accounts (public keys) and signatures of transactions for other blockchains.
 
-Several MPC nodes maintain a single public key. This key is combined with your NEAR AccountId (unique) and a chosen "path" offset (chosen by client). This produces a new and unique public key. The generation of signatures via the MPC nodes can only be authorized by same NEAR Account by calling the `sign` method of the MPC contract.
+Several MPC nodes maintain a single public key. This key is combined with your NEAR accountId (unique) and a "path" offset (chosen by client). This produces a new and unique public key. The generation of signatures via the MPC nodes can only be authorized by same NEAR account by calling the `sign` method of the MPC contract. This NEAR account can be a smart contract.
 
-The creation of secp256k1 public keys for Bitcoin and EVM chains is currently supported.
+The creation of secp256k1 public keys and addresses for Bitcoin (like) and EVM chains is currently supported.
 
 ### Flow (how it works)
 
@@ -35,8 +32,8 @@ NEAR_ACCOUNT_ID="[NEAR_TESTNET_ACCOUNT]"
 NEAR_PRIVATE_KEY="[NEAR_ACCOUNT_PRIVATE_KEY]"
 MPC_PATH="[MPC_PATH]"
 MPC_CHAIN="[ethereum|bitcoin]"
-MPC_CONTRACT_ID="multichain-testnet-2.testnet"
-MPC_PUBLIC_KEY="secp256k1:4HFcTSodRLVCGNVcGc4Mf2fwBBBxv9jxkGdiW2S2CA1y6UpVVRWKj6RX7d7TDt65k2Bj3w9FU4BGtt43ZvuhCnNt"
+MPC_CONTRACT_ID="v1.signer-dev.testnet"
+MPC_PUBLIC_KEY="secp256k1:54hU5wcCmVUPFWLDALXMh1fFToZsVXrx9BbTbHzSfQq1Kd1rJZi52iPa4QQxo6s5TgjWqgpY8HamYuUDzG6fAaUq"
 ```
 
 ### For dogecoin testnet (link below)
@@ -47,7 +44,7 @@ TATUM_API_KEY=""
 
 ### For MPC_PATH please refer to:
 
-[Path naming conventions](https://github.com/near/near-fastauth-wallet/blob/dmd/chain_sig_docs/docs/chain_signature_api.org)
+[Path naming conventions](https://docs.near.org/concepts/abstraction/chain-signatures#one-account-multiple-chains)
 
 # How to Use Commands
 
@@ -94,7 +91,7 @@ Usage: `yarn start [commands]`
 -   --args - arguments e.g. '{"address":"0x525521d79134822a342d330bd91da67976569af1"}' in single quotes
 -   --ret - list of return parameter types (if any) e.g. ['uint256']
 
-## Ethereum EVM Contract NFT Example
+# Ethereum EVM Contract NFT Example
 
 After setting up all your environment variables and ensuring your calling EVM address has ETH for gas.
 
@@ -120,9 +117,34 @@ Which should output `1` the NFT balance of default address `0x525521d79134822a34
 
 To view the balance of a different address use `--args '{"address":"0x[SOME_OTHER_ADDRESS]"}'` with your args in single quotes and properly formatted JSON paths and values in double quotes.
 
-# Proxy call MPC sign from NEAR Contract and use signature to call 'mint' on EVM Contract (advanced)
+# Call a NEAR contract to sign a call for an EVM Account (advanced)
 
-To deploy the NEAR contract use `cargo-near`.
+This example uses a NEAR contract to call the NEAR MPC Contract and produce a valid signature for a derived EVM account that is based on the NEAR contract address.
+
+Simply put, it is exchanging a payable NEAR transaction for a valid signature to execute an EVM transaction.
+
+1. Client -> call `sign` method -> [NEAR CONTRACT]
+2. [NEAR CONTRACT] -> [MPC Contract]
+3. [MPC Contract] -> return signature -> [NEAR CONTRACT]
+4. [NEAR CONTRACT] -> return signature -> Client
+5. Client -> broadcast EVM transaction (as the derived EVM account)
+
+### Access Control and Protocol Application Logic
+
+The only way to obtain a valid ecdsa signature for the derived EVM account is by calling the NEAR contract's sign method.
+
+If the derived EVM account is, for example, the owner of an NFT contract (like in the example above), then the only way to mint the NFT is by calling the NEAR contract first to obtain a valid signature for the owner.
+
+The NEAR contract acts as a gatekeeper for the derived EVM account (or accounts). Expanding on this, complex applications can be built with their logic happening on NEAR and the execution happening on EVM or other chains!
+
+### NEAR contract features:
+
+1. `sign` method accepts a payload that is the unhashed RLP encoded EVM transaction data e.g. `6a627842000000000000000000000000525521d79134822a342d330bd91DA67976569aF1` calls the method `mint` with an address argument of `525521d79134822a342d330bd91DA67976569aF1`
+2. `PUBLIC_RLP_ENCODED_METHOD_NAMES` is a constant that stores EVM method name hashes that can be called by any NEAR account; e.g. the method name `mint` hashes `6a627842000000000000000000000000`
+3. The `COST` of a public call is 1 NEAR token
+4. `path` and `key_version` arguments are passed through to MPC `sign` call, but in the future could be used as additional features by this contract for new applications or security
+
+### Deploy the NEAR contract using `cargo-near`.
 
 Install `cargo-near` and `near-cli`
 
@@ -137,14 +159,7 @@ cargo near create-dev-account
 cargo near deploy [ACCOUNT_ID]
 ```
 
-The NEAR contract has the following features:
-
-1. `sign` method accepts a payload that is the unhashed RLP encoded EVM transaction data e.g. `6a627842000000000000000000000000525521d79134822a342d330bd91DA67976569aF1` calls the method `mint` with an address argument of `525521d79134822a342d330bd91DA67976569aF1`
-2. `PUBLIC_RLP_ENCODED_METHOD_NAMES` stores public EVM method name hashes that can be called from this NEAR contract to the destination address e.g. the method name `mint` hashes `6a627842000000000000000000000000`
-3. `COST` must be paid in NEAR
-4. `path` and `key_version` arguments are passed through to MPC `sign` call, but in the future could be used as additional features for applications or security
-
-To use, set the following `.env` vars accordingly:
+### Set the following `.env` vars accordingly:
 
 ```
 NEAR_PROXY_ACCOUNT="true"
@@ -155,9 +170,9 @@ NEAR_PROXY_PRIVATE_KEY="ed25519:..."
 
 With `NEAR_PROXY_CONTRACT="true"` the script will call `sign` method of the proxy contract you deployed using `cargo near deploy`.
 
-To verify, send some ETH using `yarn start -etx`.
+With `NEAR_PROXY_ACCOUNT="false"` you will be calling the NEAR contract from your own NEAR account specified in the `.env`. You will only be able to call sign for an EVM transaction that contains the rlp encoded method name `mint`. Why? Because otherwise, any NEAR account could get a valid signature for any EVM transaction for the derived EVM account of the proxy contract. This is an example of the [Access Control and Protocol Application Logic](#Access-Control-and-Protocol-Application-Logic) section above.
 
-With `NEAR_PROXY_ACCOUNT="false"` you will not be able to send ETH using the `sign` method of the proxy contract. Why? Because this would mean any NEAR account can send ETH from the derived account of the proxy contract. Oh no! The proxy contract protects against arbitrary transactions using this check:
+### Protect against signing arbitrary EVM transactions:
 
 ```
 let owner = env::predecessor_account_id() == env::current_account_id();
@@ -179,58 +194,68 @@ if !public {
 }
 ```
 
-## Testing the Proxy call and minting the NFT on the EVM Contract
+### Testing the NEAR contract and minting the NFT on the EVM contract
 
 1. Your contract should be deployed and you should have the following env vars:
 
+```
 NEAR_PROXY_ACCOUNT="true"
 NEAR_PROXY_CONTRACT="true"
 NEAR_PROXY_ACCOUNT_ID="..."
 NEAR_PROXY_PRIVATE_KEY="ed25519:..."
+```
 
-2. Call `yarn start -etx` you are now deriving an Ethereum address using the NEAR Account ID of the NEAR Proxy Contract, not your NEAR Account ID
+2. Call `yarn start -etx` you are now deriving an Ethereum address using the NEAR account ID of the NEAR Proxy Contract, not your NEAR account ID
 
-This Ethereum address is different and unfunded. So, this transaction will not work.
+_NOTE: This Ethereum address is different and unfunded. So, this transaction will not work._
 
-3. Fund the address from step 2. You can do this by sending ETH using this script.
+3. Fund the address from step 2.
+
+You can do this by sending ETH using this script.
 
 Change env vars:
 
+```
 NEAR_PROXY_ACCOUNT="false"
 NEAR_PROXY_CONTRACT="false"
+```
 
 Send ETH to your new derived Ethereum address:
 
 `yarn start -etx --to 0x[ADDRESS FROM STEP 2] --amount [AMOUNT IN ETH e.g. 0.1]`
 
-4. Now you can repeat the steps from **Ethereum EVM Contract NFT Example** above.
+4. Now you can repeat the steps from the [**Ethereum EVM Contract NFT Example**](#Ethereum-EVM-Contract-NFT-Example) above.
 
-## Key Points
+You will deploy the NFT contract to an EVM account derived from the EVM account derived (not a typo) from the NEAR contract address.
 
-1. To use the NEAR Contract, when you are not the NEAR Contract owner, the NEAR transaction requires `1 NEAR` token
-2. The Ethereum transaction always uses gas from the same account derived from = NEAR_PROXY_ACCOUNT_ID + MPC_PATH (+ MPC_PUBLIC_KEY)
+-   [NEAR CONTRACT] -> [Derived EVM account] -> [EVM contract]
 
-Enjoy!
+Once you get the signature from calling the NEAR contract, to broadcast your transaction, you will call the `mint` method as the owner of the deployed NFT contract.
+
+-   [Derived EVM account] -> [EVM contract]
+
+5. Once the NFT contract is deployed you can call the NEAR contract from any NEAR account. Try it by changing the `.env` vars:
+
+```
+NEAR_PROXY_ACCOUNT="false"
+NEAR_PROXY_CONTRACT="true"
+```
 
 # References & Useful Links
 
+[Official Documentation](https://docs.near.org/build/chain-abstraction/chain-signatures)
+
 ### Examples
 
-[Live Example - NEAR Testnet, Sepolia, Bitcoin Testnet](https://test.near.social/md1.testnet/widget/chainsig-sign-eth-tx)
-
-[A frontend example you can run locally](https://github.com/gagdiez/near-multichain)
+TBD
 
 ### Docs
 
-[Path naming conventions](https://github.com/near/near-fastauth-wallet/blob/dmd/chain_sig_docs/docs/chain_signature_api.org)
-
-[Chain Signatures Docs](https://docs.near.org/concepts/abstraction/chain-signatures)
-
-[Chain Signatures Use Cases](https://docs.near.org/concepts/abstraction/signatures/use-cases)
+[Official Documentation](https://docs.near.org/build/chain-abstraction/chain-signatures)
 
 ### MPC Repositories
 
-[MPC Repo](https://github.com/near/mpc-recovery/)
+[MPC Repo](https://github.com/near/mpc)
 
 ### Faucets and API Keys
 

@@ -20,9 +20,9 @@ const privateKey =
 const keyStore = new keyStores.InMemoryKeyStore();
 keyStore.setKey('testnet', accountId, KeyPair.fromString(privateKey));
 
-console.log('Near Chain Signature (NCS) call details:');
+console.log('Near MPC call details:');
 console.log('Near accountId', accountId);
-console.log('NCS contractId', contractId);
+console.log('MPC contractId', contractId);
 
 const config = {
     networkId: 'testnet',
