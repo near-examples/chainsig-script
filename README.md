@@ -4,6 +4,10 @@
 
 [Official Documentation](https://docs.near.org/build/chain-abstraction/chain-signatures)
 
+# Workshop Video
+
+[![Workshop Video](https://img.youtube.com/vi/QTeNALBH3kw/0.jpg)](https://youtu.be/QTeNALBH3kw)
+
 # Introduction
 
 NEAR's MPC allows a NEAR account to create derivative accounts (public keys) and signatures of transactions for other blockchains.
@@ -46,14 +50,12 @@ TATUM_API_KEY=""
 
 [Path naming conventions](https://docs.near.org/concepts/abstraction/chain-signatures#one-account-multiple-chains)
 
-# How to Use Commands
-
-(as a user or dev to verify everything works)
+# How to Use
 
 1. Read the `Installation` steps and set up all environment variables first with `.env` file.
-2. Use the commands to generate addresses first.
+2. Use the commands to generate some Chain Signature addresses first.
 3. Fund these addresses with the Testnet Faucets provided in the links below.
-4. Use the commands to send funds from your generated addresses.
+4. Use the commands to send funds and transactions from your generated addresses.
 
 # Prebuilt Commands
 

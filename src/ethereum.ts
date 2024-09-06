@@ -215,10 +215,13 @@ const ethereum = {
         // console.log('sig', sig);
 
         // check 2 values for v (y-parity) and recover the same ethereum address from the generateAddress call (in app.ts)
+        console.log('address', address);
         let addressRecovered = false;
         for (let v = 0; v < 2; v++) {
             sig.v = v + chainId * 2 + 35;
             const recoveredAddress = ethers.utils.recoverAddress(payload, sig);
+
+            console.log('recoveredAddress', recoveredAddress);
             if (recoveredAddress.toLowerCase() === address.toLowerCase()) {
                 addressRecovered = true;
                 break;

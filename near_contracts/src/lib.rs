@@ -52,7 +52,7 @@ impl Contract {
             );
         }
 
-        // hash and reverse rlp encoded payload
+        // hash rlp encoded payload
         let payload: [u8; 32] = env::keccak256_array(&decode(rlp_payload).unwrap())
             .try_into()
             .unwrap();
