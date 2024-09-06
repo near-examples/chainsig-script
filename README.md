@@ -121,23 +121,25 @@ To view the balance of a different address use `--args '{"address":"0x[SOME_OTHE
 
 # Call a NEAR contract to sign a call for an EVM Account (advanced)
 
-This example uses a NEAR contract to call the NEAR MPC Contract and produce a valid signature for a derived EVM account that is based on the NEAR contract address.
+This example uses a NEAR contract (think of it like a proxy) to call the NEAR MPC Contract.
 
-Simply put, it is exchanging a payable NEAR transaction for a valid signature to execute an EVM transaction.
+This produces a valid signature for a derived EVM account based on the "proxy" NEAR contract account ID, **NOT** the caller's NEAR account ID.
+
+Our example will be a payable NEAR transaction that produces a valid signature to execute an EVM transaction.
 
 1. Client -> call `sign` method -> [NEAR CONTRACT]
 2. [NEAR CONTRACT] -> [MPC Contract]
 3. [MPC Contract] -> return signature -> [NEAR CONTRACT]
 4. [NEAR CONTRACT] -> return signature -> Client
-5. Client -> broadcast EVM transaction (as the derived EVM account)
+5. Client -> broadcast EVM transaction (as the derived EVM account of the NEAR CONTRACT + a path e.g. "ethereum,1")
 
-### Access Control and Protocol Application Logic
+### Protocol Logic
 
 The only way to obtain a valid ecdsa signature for the derived EVM account is by calling the NEAR contract's sign method.
 
 If the derived EVM account is, for example, the owner of an NFT contract (like in the example above), then the only way to mint the NFT is by calling the NEAR contract first to obtain a valid signature for the owner.
 
-The NEAR contract acts as a gatekeeper for the derived EVM account (or accounts). Expanding on this, complex applications can be built with their logic happening on NEAR and the execution happening on EVM or other chains!
+The NEAR contract acts as a gatekeeper for the derived EVM account (or accounts). Expanding on this, complex applications can be built with their logic on NEAR and the execution happening on EVM or other chains!
 
 ### NEAR contract features:
 
@@ -226,6 +228,13 @@ Send ETH to your new derived Ethereum address:
 
 `yarn start -etx --to 0x[ADDRESS FROM STEP 2] --amount [AMOUNT IN ETH e.g. 0.1]`
 
+Don't forget to change these back!
+
+```
+NEAR_PROXY_ACCOUNT="true"
+NEAR_PROXY_CONTRACT="true"
+```
+
 4. Now you can repeat the steps from the [**Ethereum EVM Contract NFT Example**](#Ethereum-EVM-Contract-NFT-Example) above.
 
 You will deploy the NFT contract to an EVM account derived from the EVM account derived (not a typo) from the NEAR contract address.
@@ -242,6 +251,8 @@ Once you get the signature from calling the NEAR contract, to broadcast your tra
 NEAR_PROXY_ACCOUNT="false"
 NEAR_PROXY_CONTRACT="true"
 ```
+
+This will make the NEAR call come from your original NEAR account (top of your .env file) instead of calling as the NEAR contract owner.
 
 # References & Useful Links
 
