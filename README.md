@@ -50,6 +50,8 @@ TATUM_API_KEY=""
 
 [Path naming conventions](https://docs.near.org/concepts/abstraction/chain-signatures#one-account-multiple-chains)
 
+![image](https://github.com/user-attachments/assets/1b263af8-8fc4-4122-9209-96f4e98967e2)
+
 # How to Use
 
 1. Read the `Installation` steps and set up all environment variables first with `.env` file.
@@ -93,7 +95,25 @@ Usage: `yarn start [commands]`
 -   --args - arguments e.g. '{"address":"0x525521d79134822a342d330bd91da67976569af1"}' in single quotes
 -   --ret - list of return parameter types (if any) e.g. ['uint256']
 
+# Calling MPC `sign` Method
+
+![image](https://github.com/user-attachments/assets/e406f6da-59cf-4d92-99fe-85e7fab9f933)
+
+This script calls the MPC contract in the `near.ts` file.
+
+The basic arguments are:
+```
+request: {
+    payload: [u8; 32]
+    path: String,
+    key_version: u32,
+}
+```
+The script also supports calling a proxy NEAR contract that will accept an EVM RLP encoded payload and hash this payload inside the contract.
+
 # Ethereum EVM Contract NFT Example
+
+![image](https://github.com/user-attachments/assets/eba3606e-8f03-43e3-a922-110b1bde62bd)
 
 After setting up all your environment variables and ensuring your calling EVM address has ETH for gas.
 
@@ -120,6 +140,8 @@ Which should output `1` the NFT balance of default address `0x525521d79134822a34
 To view the balance of a different address use `--args '{"address":"0x[SOME_OTHER_ADDRESS]"}'` with your args in single quotes and properly formatted JSON paths and values in double quotes.
 
 # Call a NEAR contract to sign a call for an EVM Account (advanced)
+
+![image](https://github.com/user-attachments/assets/1fc92dfb-67da-4df7-ba8b-ceacd8b5569d)
 
 This example uses a NEAR contract (think of it like a proxy) to call the NEAR MPC Contract.
 
