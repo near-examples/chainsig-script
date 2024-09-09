@@ -7,10 +7,11 @@ import {
   serializeSignDoc,
   StdSignDoc,
 } from "@cosmjs/amino";
-import { COSMOS_CHAIN_IDS, ORAI, toAmount } from "@oraichain/common";
+import { COSMOS_CHAIN_IDS, ORAI, toAmount, toDisplay } from "@oraichain/common";
 import { SignDoc } from "cosmjs-types/cosmos/tx/v1beta1/tx";
 import { compressPublicKey } from "./kdf";
 import { CosmosUtils } from "./cosmos-utils";
+import prompts from "prompts";
 
 dotenv.config();
 
@@ -34,6 +35,22 @@ const oraichain = {
     amount = toAmount(0.01).toString(),
   }) => {
     if (!address) return console.log("must provide a sending address");
+    console.log(
+      "sending",
+      toDisplay(amount),
+      oraichain.cosmosUtils.denom.toUpperCase(),
+      "from",
+      address,
+      "to",
+      to
+    );
+    const cont = await prompts({
+      type: "confirm",
+      name: "value",
+      message: "Confirm? (y or n)",
+      initial: true,
+    });
+    if (!cont.value) return;
     const { completeCosmosTx, cosmosUtils } = oraichain;
     cosmosUtils.withSenderAddress(address);
     const signDoc = await cosmosUtils.buildSimpleMsgSendStdSignDoc(to, amount);
@@ -48,6 +65,23 @@ const oraichain = {
   }) => {
     if (!address) throw new Error("must provide a sending address");
     if (!publicKey) throw new Error("must provide public key");
+    console.log(
+      "sending",
+      toDisplay(amount),
+      oraichain.cosmosUtils.denom.toUpperCase(),
+      "from",
+      address,
+      "to",
+      to
+    );
+    const cont = await prompts({
+      type: "confirm",
+      name: "value",
+      message: "Confirm? (y or n)",
+      initial: true,
+    });
+    if (!cont.value) return;
+
     const compressedPublicKey = compressPublicKey(publicKey);
     const { completeCosmosTxDirect, cosmosUtils } = oraichain;
     cosmosUtils.withSenderAddress(address);

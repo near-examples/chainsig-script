@@ -41,10 +41,10 @@ program.parse();
 
 // options
 const options = Object.entries(program.opts())
-  .map(([k, v]) => ({
-    [k.toLowerCase()]: v,
-  }))
-  .reduce((a, c) => ({ ...a, ...c }), {});
+    .map(([k, v]) => ({
+        [k.toLowerCase()]: v,
+    }))
+    .reduce((a, c) => ({ ...a, ...c }), {});
 
 const tryParse = (s) => {
   if (!s) return;
@@ -57,13 +57,13 @@ const tryParse = (s) => {
 };
 
 const {
-  MPC_PUBLIC_KEY,
-  NEAR_ACCOUNT_ID,
-  MPC_PATH,
-  MPC_CONTRACT_ID,
-  NEAR_PROXY_ACCOUNT,
-  NEAR_PROXY_CONTRACT,
-  NEAR_PROXY_ACCOUNT_ID,
+    MPC_PUBLIC_KEY,
+    NEAR_ACCOUNT_ID,
+    MPC_PATH,
+    MPC_CONTRACT_ID,
+    NEAR_PROXY_ACCOUNT,
+    NEAR_PROXY_CONTRACT,
+    NEAR_PROXY_ACCOUNT_ID,
 } = process.env;
 
 let {

@@ -4,21 +4,21 @@ import dotenv from "dotenv";
 dotenv.config();
 const { Near, Account, keyStores, KeyPair } = nearAPI;
 const {
-  MPC_CONTRACT_ID,
-  NEAR_ACCOUNT_ID,
-  NEAR_PRIVATE_KEY,
-  NEAR_PROXY_ACCOUNT,
-  NEAR_PROXY_CONTRACT,
-  NEAR_PROXY_ACCOUNT_ID,
-  NEAR_PROXY_PRIVATE_KEY,
+    MPC_CONTRACT_ID,
+    NEAR_ACCOUNT_ID,
+    NEAR_PRIVATE_KEY,
+    NEAR_PROXY_ACCOUNT,
+    NEAR_PROXY_CONTRACT,
+    NEAR_PROXY_ACCOUNT_ID,
+    NEAR_PROXY_PRIVATE_KEY,
 } = process.env;
 
 const accountId =
-  NEAR_PROXY_ACCOUNT === "true" ? NEAR_PROXY_ACCOUNT_ID : NEAR_ACCOUNT_ID;
+    NEAR_PROXY_ACCOUNT === 'true' ? NEAR_PROXY_ACCOUNT_ID : NEAR_ACCOUNT_ID;
 const contractId =
-  NEAR_PROXY_CONTRACT === "true" ? NEAR_PROXY_ACCOUNT_ID : MPC_CONTRACT_ID;
+    NEAR_PROXY_CONTRACT === 'true' ? NEAR_PROXY_ACCOUNT_ID : MPC_CONTRACT_ID;
 const privateKey =
-  NEAR_PROXY_ACCOUNT === "true" ? NEAR_PROXY_PRIVATE_KEY : NEAR_PRIVATE_KEY;
+    NEAR_PROXY_ACCOUNT === 'true' ? NEAR_PROXY_PRIVATE_KEY : NEAR_PRIVATE_KEY;
 const keyStore = new keyStores.InMemoryKeyStore();
 keyStore.setKey("testnet", accountId, KeyPair.fromString(privateKey));
 

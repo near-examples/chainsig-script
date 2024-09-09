@@ -1,4 +1,4 @@
-import { base_decode } from "near-api-js/lib/utils/serialize";
+import { base_decode, base_encode } from "near-api-js/lib/utils/serialize";
 import { ec as EC } from "elliptic";
 import BN from "bn.js";
 import keccak from "keccak";
@@ -12,6 +12,7 @@ const { deriveAddress } = xrpl;
 
 import { ORAI } from "@oraichain/common";
 import { ethers } from "ethers";
+import { generateSeedPhrase } from "near-seed-phrase";
 
 function najPublicKeyStrToUncompressedHexPoint(najPublicKeyStr) {
   return (
@@ -99,7 +100,13 @@ async function uncompressedHexPointToBtcAddress(publicKeyHex, networkByte) {
   return address;
 }
 
-export async function generateAddress({ publicKey, accountId, path, chain, bech32Prefix }) {
+export async function generateAddress({
+  publicKey,
+  accountId,
+  path,
+  chain,
+  bech32Prefix,
+}) {
   let childPublicKey = await deriveChildPublicKey(
     najPublicKeyStrToUncompressedHexPoint(publicKey),
     accountId,
@@ -195,3 +202,36 @@ export const hash160 = (buffer: Buffer) => {
     return createHash("ripemd160").update(sha256Hash).digest();
   }
 };
+
+// WARNING WIP DO NOT USE
+async function uncompressedHexPointToNearImplicit(uncompressedHexPoint) {
+  console.log("uncompressedHexPoint", uncompressedHexPoint);
+
+  const implicitSecpPublicKey =
+    "secp256k1:" +
+    base_encode(Buffer.from(uncompressedHexPoint.substring(2), "hex"));
+  // get an implicit accountId from an ed25519 keyPair using the sha256 of the secp256k1 point as entropy
+  const sha256HashOutput = await crypto.subtle.digest(
+    "SHA-256",
+    Buffer.from(uncompressedHexPoint, "hex")
+  );
+  const { publicKey, secretKey } = generateSeedPhrase(
+    Buffer.from(sha256HashOutput)
+  );
+
+  // DEBUG
+  // console.log(secretKey);
+
+  const implicitAccountId = Buffer.from(
+    base_decode(publicKey.split(":")[1])
+  ).toString("hex");
+
+  // DEBUG adding key
+  // await addKey({
+  //     accountId: implicitAccountId,
+  //     secretKey,
+  //     publicKey: implicitSecpPublicKey,
+  // });
+
+  return { implicitAccountId, implicitSecpPublicKey };
+}
