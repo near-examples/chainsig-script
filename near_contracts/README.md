@@ -30,11 +30,11 @@ cargo near deploy <account-id>
 
 ## Useful Links
 
-- [cargo-near](https://github.com/near/cargo-near) - NEAR smart contract development toolkit for Rust
-- [near CLI-rs](https://near.cli.rs) - Iteract with NEAR blockchain from command line
-- [NEAR Rust SDK Documentation](https://docs.near.org/sdk/rust/introduction)
-- [NEAR Documentation](https://docs.near.org)
-- [NEAR StackOverflow](https://stackoverflow.com/questions/tagged/nearprotocol)
-- [NEAR Discord](https://near.chat)
-- [NEAR Telegram Developers Community Group](https://t.me/neardev)
-- NEAR DevHub: [Telegram](https://t.me/neardevhub), [Twitter](https://twitter.com/neardevhub)
+-   [cargo-near](https://github.com/near/cargo-near) - NEAR smart contract development toolkit for Rust
+-   [near CLI-rs](https://near.cli.rs) - Iteract with NEAR blockchain from command line
+-   [NEAR Rust SDK Documentation](https://docs.near.org/sdk/rust/introduction)
+-   [NEAR Documentation](https://docs.near.org)
+-   [NEAR StackOverflow](https://stackoverflow.com/questions/tagged/nearprotocol)
+-   [NEAR Discord](https://near.chat)
+-   [NEAR Telegram Developers Community Group](https://t.me/neardev)
+-   NEAR DevHub: [Telegram](https://t.me/neardevhub), [Twitter](https://twitter.com/neardevhub)

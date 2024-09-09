@@ -36,8 +36,8 @@ NEAR_ACCOUNT_ID="[NEAR_TESTNET_ACCOUNT]"
 NEAR_PRIVATE_KEY="[NEAR_ACCOUNT_PRIVATE_KEY]"
 MPC_PATH="[MPC_PATH]"
 MPC_CHAIN="[ethereum|bitcoin]"
-MPC_CONTRACT_ID="multichain-testnet-2.testnet"
-MPC_PUBLIC_KEY="secp256k1:4HFcTSodRLVCGNVcGc4Mf2fwBBBxv9jxkGdiW2S2CA1y6UpVVRWKj6RX7d7TDt65k2Bj3w9FU4BGtt43ZvuhCnNt"
+MPC_CONTRACT_ID="v1.signer-dev.testnet"
+MPC_PUBLIC_KEY="secp256k1:54hU5wcCmVUPFWLDALXMh1fFToZsVXrx9BbTbHzSfQq1Kd1rJZi52iPa4QQxo6s5TgjWqgpY8HamYuUDzG6fAaUq"
 ```
 
 ### For dogecoin testnet (link below)
@@ -65,20 +65,24 @@ TATUM_API_KEY=""
 
 ### Command List
 
-- -ea - ethereum addressm (EVM)
-- -ba - bitcoin testnet address
-- -da - dogecoin testnet address
-- -ra - ripple testnet address
-- -s - sign sample payload using NEAR account
-- -etx - send ETH
-- -btx - send BTC
-- -dtx - send DOGE (requires API KEY)
-- -rtx - send XRP
+-   -ea - ethereum addressm (EVM)
+-   -ba - bitcoin testnet address
+-   -da - dogecoin testnet address
+-   -ra - ripple testnet address
+-   -oa - Oraichain's address
+-   -oea - Oraichain's Ethermint address
+-   -s - sign sample payload using NEAR account
+-   -etx - send ETH
+-   -btx - send BTC
+-   -dtx - send DOGE (requires API KEY)
+-   -rtx - send XRP
+-   -otx - send ORAI
+-   -oetx - send ORAI using Oraichain's EVM account (only works on Cosmos-based chains having the Ethermint module)
 
 ### Sending Options
 
-- --amount - amount to send (ETH or sats)
-- --to - destination address
+-   --amount - amount to send (ETH or sats or ORAI)
+-   --to - destination address
 
 # EVM Contract Deployment and Interactions (advanced)
 
@@ -86,14 +90,14 @@ Usage: `yarn start [commands]`
 
 ### Command List
 
-- -d, -edc - deploy contract
-- --to - the contract address to view/call
-- -v, -view - view contract state (readonly call)
-- -c, -call - call contract method
-- --path - path to EVM bytecode file from root of this project
-- --method - name of method view/call
-- --args - arguments e.g. '{"address":"0x525521d79134822a342d330bd91da67976569af1"}' in single quotes
-- --ret - list of return parameter types (if any) e.g. ['uint256']
+-   -d, -edc - deploy contract
+-   --to - the contract address to view/call
+-   -v, -view - view contract state (readonly call)
+-   -c, -call - call contract method
+-   --path - path to EVM bytecode file from root of this project
+-   --method - name of method view/call
+-   --args - arguments e.g. '{"address":"0x525521d79134822a342d330bd91da67976569af1"}' in single quotes
+-   --ret - list of return parameter types (if any) e.g. ['uint256']
 
 # Calling MPC `sign` Method
 
@@ -176,8 +180,8 @@ The NEAR contract acts as a gatekeeper for the derived EVM account (or accounts)
 
 Install `cargo-near` and `near-cli`
 
-- [cargo-near](https://github.com/near/cargo-near) - NEAR smart contract development toolkit for Rust
-- [near CLI-rs](https://near.cli.rs) - Iteract with NEAR blockchain from command line
+-   [cargo-near](https://github.com/near/cargo-near) - NEAR smart contract development toolkit for Rust
+-   [near CLI-rs](https://near.cli.rs) - Iteract with NEAR blockchain from command line
 
 ```
 cargo build
@@ -263,11 +267,11 @@ NEAR_PROXY_CONTRACT="true"
 
 You will deploy the NFT contract to an EVM account derived from the EVM account derived (not a typo) from the NEAR contract address.
 
-- [NEAR CONTRACT] -> [Derived EVM account] -> [EVM contract]
+-   [NEAR CONTRACT] -> [Derived EVM account] -> [EVM contract]
 
 Once you get the signature from calling the NEAR contract, to broadcast your transaction, you will call the `mint` method as the owner of the deployed NFT contract.
 
-- [Derived EVM account] -> [EVM contract]
+-   [Derived EVM account] -> [EVM contract]
 
 5. Once the NFT contract is deployed you can call the NEAR contract from any NEAR account. Try it by changing the `.env` vars:
 
@@ -313,3 +317,15 @@ TBD
 [XRP Ledger Testnet Faucet](https://test.bithomp.com/faucet/)
 
 [XRP Ledger Testnet Explorer](https://test.bithomp.com/explorer)
+
+#### Cosmos-based chains
+
+[Faucets](https://stakely.io/faucet)
+
+##### Oraichain
+
+[Oraichain Explorer](https://scanium.io/Oraichain)
+[Oraichain RPC](https://rpc.orai.io)
+[Oraichain LCD](https://lcd.orai.io)
+
+[Oraichain mainnet Faucet](https://stakely.io/faucet/oraichain-orai)
