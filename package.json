@@ -4,7 +4,8 @@
     "license": "MIT",
     "author": "Matt Lockyer (https://github.com/mattlockyer)",
     "scripts": {
-        "start": "yarn tsc && node --trace-deprecation --env-file .env ./dist/app.js"
+        "start": "yarn tsc && node --trace-deprecation --env-file .env ./dist/app.js",
+        "format": "prettier --write ."
     },
     "devDependencies": {
         "@types/node": "^20.11.29",
@@ -18,6 +19,7 @@
         "hash.js": "^1.1.7",
         "keccak": "^3.0.4",
         "near-api-js": "^3.0.4",
+        "prettier": "^3.3.3",
         "prompts": "^2.4.2",
         "typescript": "^5.4.2",
         "xrpl": "^3.0.0"

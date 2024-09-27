@@ -102,6 +102,7 @@ Usage: `yarn start [commands]`
 This script calls the MPC contract in the `near.ts` file.
 
 The basic arguments are:
+
 ```
 request: {
     payload: [u8; 32]
@@ -109,6 +110,7 @@ request: {
     key_version: u32,
 }
 ```
+
 The script also supports calling a proxy NEAR contract that will accept an EVM RLP encoded payload and hash this payload inside the contract.
 
 # Ethereum EVM Contract NFT Example
