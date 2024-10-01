@@ -8,15 +8,27 @@
         "format": "prettier --write ."
     },
     "devDependencies": {
+        "@cosmjs/amino": "^0.31.3",
+        "@cosmjs/encoding": "^0.32.4",
+        "@cosmjs/math": "^0.32.4",
+        "@cosmjs/proto-signing": "^0.31.3",
+        "@cosmjs/stargate": "^0.31.3",
+        "@cosmjs/tendermint-rpc": "^0.31.3",
+        "@oraichain/common": "^1.0.7",
+        "@oraichain/oraidex-common": "^1.1.6",
+        "@types/elliptic": "^6.4.18",
         "@types/node": "^20.11.29",
+        "@types/prompts": "^2.4.9",
+        "bech32": "^2.0.0",
         "bitcoinjs-lib": "^6.1.5",
         "bn.js": "^5.2.1",
         "bs58check": "^3.0.1",
         "coininfo": "^5.2.1",
         "commander": "^12.0.0",
+        "cosmjs-types": "^0.8.0",
+        "dotenv": "^16.4.5",
         "elliptic": "^6.5.5",
         "ethers": "^5.7.2",
-        "hash.js": "^1.1.7",
         "keccak": "^3.0.4",
         "near-api-js": "^3.0.4",
         "prettier": "^3.3.3",
@@ -28,5 +40,6 @@
         "audit": "^0.0.6",
         "js-sha3": "^0.9.3",
         "near-seed-phrase": "^0.2.1"
-    }
+    },
+    "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

@@ -69,15 +69,19 @@ TATUM_API_KEY=""
 -   -ba - bitcoin testnet address
 -   -da - dogecoin testnet address
 -   -ra - ripple testnet address
+-   -oa - Oraichain's address
+-   -oea - Oraichain's Ethermint address
 -   -s - sign sample payload using NEAR account
 -   -etx - send ETH
 -   -btx - send BTC
 -   -dtx - send DOGE (requires API KEY)
 -   -rtx - send XRP
+-   -otx - send ORAI
+-   -oetx - send ORAI using Oraichain's EVM account (only works on Cosmos-based chains having the Ethermint module)
 
 ### Sending Options
 
--   --amount - amount to send (ETH or sats)
+-   --amount - amount to send (ETH or sats or ORAI)
 -   --to - destination address
 
 # EVM Contract Deployment and Interactions (advanced)
@@ -313,3 +317,15 @@ TBD
 [XRP Ledger Testnet Faucet](https://test.bithomp.com/faucet/)
 
 [XRP Ledger Testnet Explorer](https://test.bithomp.com/explorer)
+
+#### Cosmos-based chains
+
+[Faucets](https://stakely.io/faucet)
+
+##### Oraichain
+
+[Oraichain Explorer](https://scanium.io/Oraichain)
+[Oraichain RPC](https://rpc.orai.io)
+[Oraichain LCD](https://lcd.orai.io)
+
+[Oraichain mainnet Faucet](https://stakely.io/faucet/oraichain-orai)

@@ -1,10 +1,15 @@
 import { program } from 'commander';
-import { generateAddress } from './kdf';
+import { compressPublicKey, generateAddress } from './kdf';
 import { sign, account } from './near';
 import dogecoin from './dogecoin';
 import ethereum from './ethereum';
 import bitcoin from './bitcoin';
 import xrpLedger from './xrpLedger';
+import dotenv from 'dotenv';
+import oraichain from './cosmos';
+import oraichainEthermint from './cosmos-ethermint';
+import { ORAI } from '@oraichain/common';
+dotenv.config();
 
 program
     .option('-p')
@@ -12,8 +17,12 @@ program
     .option('-ba')
     .option('-da')
     .option('-ra')
+    .option('-oa')
+    .option('-oea')
     .option('-s')
     .option('-etx')
+    .option('-otx')
+    .option('-oetx')
     .option('-btx')
     .option('-dtx')
     .option('-rtx')
@@ -64,11 +73,15 @@ let {
     ba,
     da,
     ra,
+    oa,
+    oea,
     s,
     etx,
     btx,
     dtx,
     rtx,
+    otx,
+    oetx,
     edc,
     view,
     call,
@@ -80,7 +93,7 @@ let {
     ret,
 } = options;
 
-export const genAddress = (chain) => {
+export const genAddress = (chain, bech32Prefix = ORAI) => {
     let accountId =
         NEAR_PROXY_ACCOUNT === 'true' || NEAR_PROXY_CONTRACT === 'true'
             ? NEAR_PROXY_ACCOUNT_ID
@@ -90,6 +103,7 @@ export const genAddress = (chain) => {
         accountId,
         path: MPC_PATH,
         chain,
+        bech32Prefix,
     });
 };
 
@@ -119,6 +133,14 @@ async function main() {
     if (ra) {
         const { address } = await genAddress('xrpLedger');
         console.log(address);
+    }
+    if (oa) {
+        const { address, publicKey } = await genAddress('cosmos');
+        console.log(address, compressPublicKey(publicKey));
+    }
+    if (oea) {
+        const { address, publicKey } = await genAddress('cosmos-ethermint');
+        console.log(address, compressPublicKey(publicKey));
     }
 
     // sample sign
@@ -150,6 +172,16 @@ async function main() {
         const { address, publicKey } = await genAddress('xrpLedger');
         await xrpLedger.send({ from: address, publicKey, to, amount });
     }
+    if (otx) {
+        const { address, publicKey } = await genAddress('cosmos');
+        console.log(address);
+        await oraichain.sendDirect({ from: address, to, publicKey, amount });
+    }
+    if (oetx) {
+        const { address } = await genAddress('cosmos-ethermint');
+        console.log(address);
+        await oraichainEthermint.send({ from: address, to, amount });
+    }
 
     // contract deployment and interaction
 
@@ -170,10 +202,10 @@ async function main() {
     }
 
     // default: mints (tokenId++) edition of nft to --args '{"address":"0x1234...."}'
-    if (call) {
-        const { address } = await genAddress('ethereum');
-        await ethereum.call({ to, method, args, ret, from: address });
-    }
+    // if (call) {
+    //   const { address } = await genAddress('ethereum');
+    //   await ethereum.call({ to, method, args, ret, from: address });
+    // }
 
     process.exit();
 }

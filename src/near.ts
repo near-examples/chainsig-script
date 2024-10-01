@@ -1,5 +1,7 @@
 import * as nearAPI from 'near-api-js';
 import BN from 'bn.js';
+import dotenv from 'dotenv';
+dotenv.config();
 const { Near, Account, keyStores, KeyPair } = nearAPI;
 const {
     MPC_CONTRACT_ID,
@@ -20,9 +22,9 @@ const privateKey =
 const keyStore = new keyStores.InMemoryKeyStore();
 keyStore.setKey('testnet', accountId, KeyPair.fromString(privateKey));
 
-console.log('Near MPC call details:');
+console.log('Near Chain Signature (NCS) call details:');
 console.log('Near accountId', accountId);
-console.log('MPC contractId', contractId);
+console.log('NCS contractId', contractId);
 
 const config = {
     networkId: 'testnet',
@@ -34,25 +36,21 @@ const config = {
 };
 export const near = new Near(config);
 export const account = new Account(near.connection, accountId);
-
-export async function sign(payload, path) {
-    let args = {
-        payload,
-        path,
-        key_version: 0,
-        rlp_payload: undefined,
-        request: undefined,
+export async function sign(payload: any, path: string) {
+    const args = {
+        request: {
+            payload,
+            path,
+            key_version: 0,
+            rlp_payload: undefined,
+        },
     };
-    let attachedDeposit = '1';
+    let attachedDeposit = nearAPI.utils.format.parseNearAmount('0.2');
 
     if (process.env.NEAR_PROXY_CONTRACT === 'true') {
-        delete args.payload;
-        args.rlp_payload = payload.substring(2);
+        delete args.request.payload;
+        args.request.rlp_payload = payload.substring(2);
         attachedDeposit = nearAPI.utils.format.parseNearAmount('1');
-    } else {
-        args = {
-            request: args,
-        } as any;
     }
 
     console.log(
@@ -61,33 +59,36 @@ export async function sign(payload, path) {
     );
     console.log('with path', path);
     console.log('this may take approx. 30 seconds to complete');
+    console.log('argument to sign: ', args);
 
-    let res;
+    let res: nearAPI.providers.FinalExecutionOutcome;
     try {
         res = await account.functionCall({
             contractId,
             methodName: 'sign',
             args,
             gas: new BN('300000000000000'),
-            attachedDeposit,
+            attachedDeposit: new BN(attachedDeposit),
         });
     } catch (e) {
-        return console.log('error signing', JSON.stringify(e));
+        throw new Error(`error signing ${JSON.stringify(e)}`);
     }
 
     // parse result into signature values we need r, s but we don't need first 2 bytes of r (y-parity)
     if ('SuccessValue' in (res.status as any)) {
         const successValue = (res.status as any).SuccessValue;
-        const decodedValue = Buffer.from(successValue, 'base64').toString(
-            'utf-8',
-        );
-        const { big_r, s, recovery_id } = JSON.parse(decodedValue);
+        const decodedValue = Buffer.from(successValue, 'base64').toString();
+        console.log('decoded value: ', decodedValue);
+        const { big_r, s: S, recovery_id } = JSON.parse(decodedValue);
+        const r = Buffer.from(big_r.affine_point.substring(2), 'hex');
+        const s = Buffer.from(S.scalar, 'hex');
 
         return {
-            r: big_r.affine_point.slice(2),
-            s: s.scalar,
+            r,
+            s,
+            v: recovery_id,
         };
     } else {
-        return console.log('error signing', JSON.stringify(res));
+        throw new Error(`error signing ${JSON.stringify(res)}`);
     }
 }

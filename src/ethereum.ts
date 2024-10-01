@@ -69,7 +69,7 @@ const ethereum = {
                 ),
             )
         ) {
-            return console.log('insufficient funds in address', address);
+            return console.log('insufficient funds');
         }
 
         console.log('sending', amount, currency, 'from', address, 'to', to);
@@ -210,18 +210,15 @@ const ethereum = {
         }
         if (!sig) return;
 
-        sig.r = '0x' + sig.r;
-        sig.s = '0x' + sig.s;
+        sig.r = '0x' + sig.r.toString('hex');
+        sig.s = '0x' + sig.s.toString('hex');
         // console.log('sig', sig);
 
         // check 2 values for v (y-parity) and recover the same ethereum address from the generateAddress call (in app.ts)
-        console.log('address', address);
         let addressRecovered = false;
         for (let v = 0; v < 2; v++) {
             sig.v = v + chainId * 2 + 35;
             const recoveredAddress = ethers.utils.recoverAddress(payload, sig);
-
-            console.log('recoveredAddress', recoveredAddress);
             if (recoveredAddress.toLowerCase() === address.toLowerCase()) {
                 addressRecovered = true;
                 break;
