@@ -61,13 +61,15 @@ const ethereum = {
         }
 
         // check account has enough balance to cover value + gas spend
+        const overrideBalanceCheck = false;
         if (
-            !balance ||
-            new BN(balance.toString()).lt(
-                new BN(ethers.utils.parseUnits(amount).toString()).add(
-                    new BN(gasPrice).mul(new BN(gasLimit.toString())),
-                ),
-            )
+            !overrideBalanceCheck &&
+            (!balance ||
+                new BN(balance.toString()).lt(
+                    new BN(ethers.utils.parseUnits(amount).toString()).add(
+                        new BN(gasPrice).mul(new BN(gasLimit.toString())),
+                    ),
+                ))
         ) {
             return console.log('insufficient funds');
         }

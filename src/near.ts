@@ -13,10 +13,10 @@ const {
     NEAR_PROXY_PRIVATE_KEY,
 } = process.env;
 
+const isProxyCall = NEAR_PROXY_CONTRACT === 'true';
 const accountId =
     NEAR_PROXY_ACCOUNT === 'true' ? NEAR_PROXY_ACCOUNT_ID : NEAR_ACCOUNT_ID;
-const contractId =
-    NEAR_PROXY_CONTRACT === 'true' ? NEAR_PROXY_ACCOUNT_ID : MPC_CONTRACT_ID;
+const contractId = isProxyCall ? NEAR_PROXY_ACCOUNT_ID : MPC_CONTRACT_ID;
 const privateKey =
     NEAR_PROXY_ACCOUNT === 'true' ? NEAR_PROXY_PRIVATE_KEY : NEAR_PRIVATE_KEY;
 const keyStore = new keyStores.InMemoryKeyStore();
@@ -42,14 +42,17 @@ export async function sign(payload: any, path: string) {
             payload,
             path,
             key_version: 0,
-            rlp_payload: undefined,
         },
+    };
+    const proxyArgs = {
+        rlp_payload: undefined,
+        path,
+        key_version: 0,
     };
     let attachedDeposit = nearAPI.utils.format.parseNearAmount('0.2');
 
-    if (process.env.NEAR_PROXY_CONTRACT === 'true') {
-        delete args.request.payload;
-        args.request.rlp_payload = payload.substring(2);
+    if (isProxyCall) {
+        proxyArgs.rlp_payload = payload.substring(2);
         attachedDeposit = nearAPI.utils.format.parseNearAmount('1');
     }
 
@@ -59,14 +62,14 @@ export async function sign(payload: any, path: string) {
     );
     console.log('with path', path);
     console.log('this may take approx. 30 seconds to complete');
-    console.log('argument to sign: ', args);
+    console.log('argument to sign: ', isProxyCall ? proxyArgs : args);
 
     let res: nearAPI.providers.FinalExecutionOutcome;
     try {
         res = await account.functionCall({
             contractId,
             methodName: 'sign',
-            args,
+            args: isProxyCall ? proxyArgs : args,
             gas: new BN('300000000000000'),
             attachedDeposit: new BN(attachedDeposit),
         });

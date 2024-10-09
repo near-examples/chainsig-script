@@ -4,8 +4,10 @@ use near_sdk::{env, ext_contract, near, require, Gas, NearToken, Promise};
 use serde::Serialize;
 
 const PUBLIC_RLP_ENCODED_METHOD_NAMES: [&'static str; 1] = ["6a627842000000000000000000000000"];
-const MPC_CONTRACT_ACCOUNT_ID: &str = "v1.signer-dev.testnet";
 const COST: NearToken = NearToken::from_near(1);
+const MPC_CONTRACT_ACCOUNT_ID: &str = "v1.signer-prod.testnet";
+const GAS: Gas = Gas::from_tgas(250);
+const ATTACHED_DEPOSIT: NearToken = NearToken::from_yoctonear(50000000000000000000000);
 
 #[derive(Serialize)]
 pub struct SignRequest {
@@ -65,8 +67,8 @@ impl Contract {
 
         // call mpc sign and return promise
         mpc::ext(MPC_CONTRACT_ACCOUNT_ID.parse().unwrap())
-            .with_static_gas(Gas::from_tgas(100))
-            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_static_gas(GAS)
+            .with_attached_deposit(ATTACHED_DEPOSIT)
             .sign(SignRequest {
                 payload,
                 path,
