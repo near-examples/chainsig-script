@@ -36,11 +36,11 @@ NEAR_ACCOUNT_ID="[NEAR_TESTNET_ACCOUNT]"
 NEAR_PRIVATE_KEY="[NEAR_ACCOUNT_PRIVATE_KEY]"
 MPC_PATH="[MPC_PATH]"
 MPC_CHAIN="[ethereum|bitcoin]"
-MPC_CONTRACT_ID="v1.signer-dev.testnet"
-MPC_PUBLIC_KEY="secp256k1:54hU5wcCmVUPFWLDALXMh1fFToZsVXrx9BbTbHzSfQq1Kd1rJZi52iPa4QQxo6s5TgjWqgpY8HamYuUDzG6fAaUq"
+MPC_CONTRACT_ID="v1.signer-prod.testnet"
+MPC_PUBLIC_KEY="secp256k1:4NfTiv3UsGahebgTaHyD9vF8KYKMBnfd6kh94mK6xv8fGBiJB8TBtFMP5WWXz6B89Ac1fbpzPwAvoyQebemHFwx3"
 ```
 
-### For dogecoin testnet (link below)
+### For dogecoin testnet (link below on how to obtain key)
 
 ```
 TATUM_API_KEY=""
@@ -51,6 +51,16 @@ TATUM_API_KEY=""
 [Path naming conventions](https://docs.near.org/concepts/abstraction/chain-signatures#one-account-multiple-chains)
 
 ![image](https://github.com/user-attachments/assets/1b263af8-8fc4-4122-9209-96f4e98967e2)
+
+### MPC_CONTRACT_ID & MPC_PUBLIC_KEY
+
+The MPC contract for testnet may change from time to time. If you are having difficulties with the contract e.g. timeouts, signatures not being returned / ready, or any other issues with the contract address, reach out in the following Telegram group: https://t.me/chain_abstraction
+
+The MPC public key corresponds to the MPC contract, but also may change from time to time as nodes are added and removed from the MPC network or the network is rebooted. Please verify the latest MPC public key for the contract you are using by using `near-cli` and the following command:
+
+```
+near view v1.signer-prod.testnet public_key
+```
 
 # How to Use
 
@@ -65,7 +75,7 @@ TATUM_API_KEY=""
 
 ### Command List
 
--   -ea - ethereum addressm (EVM)
+-   -ea - ethereum address (EVM)
 -   -ba - bitcoin testnet address
 -   -da - dogecoin testnet address
 -   -ra - ripple testnet address
@@ -107,7 +117,7 @@ This script calls the MPC contract in the `near.ts` file.
 
 The basic arguments are:
 
-```
+```rust
 request: {
     payload: [u8; 32]
     path: String,
@@ -121,7 +131,15 @@ The script also supports calling a proxy NEAR contract that will accept an EVM R
 
 ![image](https://github.com/user-attachments/assets/eba3606e-8f03-43e3-a922-110b1bde62bd)
 
-After setting up all your environment variables and ensuring your calling EVM address has ETH for gas.
+After setting up all your environment variables ensure that your EVM account is funded.
+
+The default network is Sepolia and given the MPC_PATH environment variable, you will receive a unique derived EVM address using the following command:
+
+```
+yarn start -ea
+```
+
+Fund this account before getting started to ensure it has enough gas to deploy an NFT contract and mint a few NFTs.
 
 Start by deploying a new NFT contract:
 
