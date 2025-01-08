@@ -61,7 +61,7 @@ const ethereum = {
         }
 
         // check account has enough balance to cover value + gas spend
-        const overrideBalanceCheck = false;
+        const overrideBalanceCheck = true;
         if (
             !overrideBalanceCheck &&
             (!balance ||

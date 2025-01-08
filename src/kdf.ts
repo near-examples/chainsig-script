@@ -48,7 +48,7 @@ export async function deriveChildPublicKey(
 }
 
 // Function to compress an uncompressed public key
-export function compressPublicKey(uncompressedKey: string) {
+export function compressPublicKeyHex(uncompressedKey: string) {
     // Remove '0x' prefix if present
     if (uncompressedKey.startsWith('0x')) {
         uncompressedKey = uncompressedKey.slice(2);
@@ -59,8 +59,12 @@ export function compressPublicKey(uncompressedKey: string) {
     const key = ec.keyFromPublic(uncompressedKey, 'hex');
 
     // Compress the public key
-    const compressedKey = key.getPublic(true, 'hex');
+    return key.getPublic(true, 'hex');
+}
 
+// Function to compress an uncompressed public key
+export function compressPublicKey(uncompressedKey: string) {
+    const compressedKey = compressPublicKeyHex(uncompressedKey);
     return Buffer.from(compressedKey, 'hex').toString('base64');
 }
 

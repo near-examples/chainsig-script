@@ -69,11 +69,13 @@ const oraichain = {
 
         // get signature from MPC contract
         let sig = await sign(payload, MPC_PATH);
-        if (!sig) return;
+        if (sig === undefined) return;
 
-        let sigCopy = JSON.parse(JSON.stringify(sig));
-        sigCopy.r = '0x' + sig.r.toString('hex');
-        sigCopy.s = '0x' + sig.s.toString('hex');
+        let sigTyped = sig as unknown as { r: Buffer; s: Buffer };
+
+        let sigCopy = JSON.parse(JSON.stringify(sigTyped));
+        sigCopy.r = '0x' + sigTyped.r.toString('hex');
+        sigCopy.s = '0x' + sigTyped.s.toString('hex');
 
         const recoverAddress = ethers.utils.recoverAddress(msgHash, sigCopy);
         const recoverPublicKey = ethers.utils.recoverPublicKey(
@@ -86,7 +88,10 @@ const oraichain = {
                 `signature failed to recover correct sending address. Wanted ${hexAddress}, got ${recoverAddress}`,
             );
 
-        const signatureBuffer = Buffer.concat([sig.r, sig.s]);
+        const signatureBuffer = Buffer.concat([
+            new Uint8Array(sigTyped.r),
+            new Uint8Array(sigTyped.s),
+        ]);
         const concatSignature: string = signatureBuffer.toString('hex');
         // strip leading 0x and trailing recovery id
         console.log('concat signature hex: ', concatSignature);
@@ -94,8 +99,8 @@ const oraichain = {
         const compressedRecoverPubkey = compressPublicKey(recoverPublicKey);
         console.log('compressed pubkey: ', compressedRecoverPubkey);
         const signature = encodeSecp256k1Signature(
-            Buffer.from(compressedRecoverPubkey, 'base64'),
-            signatureBuffer,
+            new Uint8Array(Buffer.from(compressedRecoverPubkey, 'base64')),
+            new Uint8Array(signatureBuffer),
         );
         console.log('signature after encoded: ', signature);
         // broadcast TX - signature now has correct { r, s, v }

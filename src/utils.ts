@@ -5,7 +5,7 @@ export const fetchJson = async (url, params = {}, noWarnings = false) => {
         if (res.status !== 200) {
             if (noWarnings) return;
             console.log('res error');
-            console.log(res);
+            console.log(await res.text());
             throw res;
         }
         return res.json();

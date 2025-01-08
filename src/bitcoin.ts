@@ -41,8 +41,8 @@ const bitcoin = {
     send: async ({
         from: address,
         publicKey,
-        to = 'n47ZTPR31eyi5SZNMbZQngJ4wiZMxXw1bS',
-        amount = '1',
+        to = 'mwgSueASAGKBCM5pLLzNeWFUSYN1T3jrFm',
+        amount = '546',
     }) => {
         if (!address) return console.log('must provide a sending address');
         const { getBalance, explorer, currency } = bitcoin;
@@ -92,6 +92,8 @@ const bitcoin = {
                         nonWitnessUtxo: Buffer.from(transaction.toHex(), 'hex'),
                     };
                 }
+
+                console.log('inputOptions', inputOptions);
                 psbt.addInput(inputOptions);
             }),
         );
@@ -104,7 +106,7 @@ const bitcoin = {
         // calculate fee
         const feeRate = await fetchJson(`${bitcoinRpc}/fee-estimates`);
         const estimatedSize = utxos.length * 148 + 2 * 34 + 10;
-        const fee = estimatedSize * (feeRate[6] + 3);
+        const fee = estimatedSize * (Math.ceil(feeRate[6]) + 5);
         console.log('btc fee', fee);
         const change = totalInput - sats - fee;
         console.log('change leftover', change);
@@ -115,6 +117,37 @@ const bitcoin = {
             });
         }
 
+        // DEBUGGING
+
+        const { tx: unsignedTx } = psbt.data.globalMap.unsignedTx as any;
+        const vin = unsignedTx.ins[0];
+        const { outs } = unsignedTx;
+
+        const txForOmni = {
+            version: 2,
+            lock_time: 0,
+            input: [
+                {
+                    previous_output: {
+                        txid: Buffer.from(vin.hash).toString('hex'),
+                        vout: 0,
+                    },
+                    script_sig: [],
+                    sequence: vin.sequence,
+                    witness: [],
+                },
+            ],
+            output: outs.map((out) => ({
+                value: out.value,
+                script_pubkey: Buffer.from(out.script).toString('hex'),
+            })),
+        };
+
+        console.log(
+            'transaction json for omni library',
+            JSON.stringify(txForOmni),
+        );
+
         // keyPair object required by psbt.signInputAsync(index, keyPair)
         const keyPair = {
             publicKey: Buffer.from(publicKey, 'hex'),
@@ -124,7 +157,10 @@ const bitcoin = {
                 );
                 const sig: any = await sign(payload, process.env.MPC_PATH);
                 if (!sig) return;
-                return Buffer.from(sig.r + sig.s, 'hex');
+                return Buffer.from(
+                    sig.r.toString('hex') + sig.s.toString('hex'),
+                    'hex',
+                );
             },
         };
 
@@ -140,12 +176,17 @@ const bitcoin = {
 
         psbt.finalizeAllInputs();
 
+        console.log('transaction hex', psbt.extractTransaction().toHex());
+
         // broadcast tx
         try {
-            const res = await fetch(`https://corsproxy.io/?${bitcoinRpc}/tx`, {
-                method: 'POST',
-                body: psbt.extractTransaction().toHex(),
-            });
+            const res = await fetch(
+                `https://corsproxy.io/?url=${bitcoinRpc}/tx`,
+                {
+                    method: 'POST',
+                    body: psbt.extractTransaction().toHex(),
+                },
+            );
             if (res.status === 200) {
                 const hash = await res.text();
                 console.log('tx hash', hash);
@@ -153,7 +194,10 @@ const bitcoin = {
                 console.log(
                     'NOTE: it might take a minute for transaction to be included in mempool',
                 );
+                return;
             }
+            console.log(res);
+            throw new Error('not 200');
         } catch (e) {
             console.log('error broadcasting bitcoin tx', JSON.stringify(e));
         }

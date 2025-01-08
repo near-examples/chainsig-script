@@ -2,7 +2,13 @@ import * as nearAPI from 'near-api-js';
 import BN from 'bn.js';
 import dotenv from 'dotenv';
 dotenv.config();
-const { Near, Account, keyStores, KeyPair } = nearAPI;
+const {
+    Near,
+    Account,
+    keyStores,
+    KeyPair,
+    transactions: { functionCall },
+} = nearAPI;
 const {
     MPC_CONTRACT_ID,
     NEAR_ACCOUNT_ID,
@@ -49,7 +55,7 @@ export async function sign(payload: any, path: string) {
         path,
         key_version: 0,
     };
-    let attachedDeposit = nearAPI.utils.format.parseNearAmount('0.2');
+    let attachedDeposit = nearAPI.utils.format.parseNearAmount('1');
 
     if (isProxyCall) {
         proxyArgs.rlp_payload = payload.substring(2);
@@ -63,6 +69,46 @@ export async function sign(payload: any, path: string) {
     console.log('with path', path);
     console.log('this may take approx. 30 seconds to complete');
     console.log('argument to sign: ', isProxyCall ? proxyArgs : args);
+
+    // Debugging multiple action calls
+
+    // if (isProxyCall) {
+    //     return console.log('cannot do this mod as proxy call');
+    // }
+    // // finalArgs are just your args to call sign
+    // const finalArgs = args;
+    // const actions = [];
+    // for (let i = 0; i < 1; i++) {
+    //     // DEBUGGING copy args and modify payload slightly
+    //     const args = JSON.parse(JSON.stringify(finalArgs));
+    //     if (i > 0) {
+    //         args.request.payload.pop();
+    //         args.request.payload.push(i);
+    //     }
+    //     actions.push(
+    //         functionCall(
+    //             'sign',
+    //             args,
+    //             new BN('100000000000000'),
+    //             new BN(attachedDeposit),
+    //         ),
+    //     );
+    // }
+
+    // let res: nearAPI.providers.FinalExecutionOutcome;
+    // try {
+    //     // receiverId is the NEAR MPC CONTRACT
+    //     res = await account.signAndSendTransaction({
+    //         receiverId: contractId,
+    //         actions,
+    //     });
+    // } catch (e) {
+    //     throw new Error(`error signing ${JSON.stringify(e)}`);
+    // }
+
+    // console.log('NEAR RESPONSE', res);
+
+    // return;
 
     let res: nearAPI.providers.FinalExecutionOutcome;
     try {
