@@ -6,7 +6,7 @@ import {
     serializeSignDoc,
     StdSignDoc,
 } from '@cosmjs/amino';
-import { toAmount } from '@oraichain/common';
+import { toAmount } from './cosmos-config';
 import { bech32ToEvm, compressPublicKey } from './kdf';
 import { CosmosUtils } from './cosmos-utils';
 import prompts from 'prompts';
@@ -77,8 +77,8 @@ const oraichain = {
         sigCopy.r = '0x' + sigTyped.r.toString('hex');
         sigCopy.s = '0x' + sigTyped.s.toString('hex');
 
-        const recoverAddress = ethers.utils.recoverAddress(msgHash, sigCopy);
-        const recoverPublicKey = ethers.utils.recoverPublicKey(
+        const recoverAddress = ethers.recoverAddress(msgHash, sigCopy);
+        const recoverPublicKey = ethers.SigningKey.recoverPublicKey(
             msgHash,
             sigCopy,
         );

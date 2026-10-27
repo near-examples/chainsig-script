@@ -1,4 +1,4 @@
-import { base_decode, base_encode } from 'near-api-js/lib/utils/serialize';
+import { baseDecode as base_decode, baseEncode as base_encode } from 'near-api-js';
 import { ec as EC } from 'elliptic';
 import BN from 'bn.js';
 import keccak from 'keccak';
@@ -10,7 +10,7 @@ import { sha3_256 } from 'js-sha3';
 import { createHash } from 'crypto';
 const { deriveAddress } = xrpl;
 
-import { ORAI } from '@oraichain/common';
+import { ORAI } from './cosmos-config';
 import { ethers } from 'ethers';
 import { generateSeedPhrase } from 'near-seed-phrase';
 
@@ -195,7 +195,7 @@ export function bech32ToEvm(bech32Address) {
     // Convert binary data to hex string and prepend '0x'
     const evmAddress = '0x' + hexBuffer.toString('hex');
 
-    return ethers.utils.getAddress(evmAddress);
+    return ethers.getAddress(evmAddress);
 }
 
 export const hash160 = (buffer: Buffer) => {

@@ -4,6 +4,7 @@ import BN from 'bn.js';
 import { fetchJson } from './utils';
 import prompts from 'prompts';
 import { sign } from './near';
+import { prepareLegacyTransaction, finalizeLegacyTransaction } from './ethereum-transaction';
 const { MPC_PATH, NEAR_PROXY_CONTRACT } = process.env;
 
 const ethereum = {
@@ -47,7 +48,7 @@ const ethereum = {
         } = ethereum;
 
         const balance = await getBalance({ address });
-        console.log('balance', ethers.utils.formatUnits(balance), currency);
+        console.log('balance', ethers.formatUnits(balance), currency);
 
         const provider = getSepoliaProvider();
         // get the nonce for the sender
@@ -55,7 +56,7 @@ const ethereum = {
         const gasPrice = await getGasPrice();
 
         // check sending value
-        const value = ethers.utils.hexlify(ethers.utils.parseUnits(amount));
+        const value = ethers.toBeHex(ethers.parseUnits(amount));
         if (value === '0x00') {
             console.log('Amount is zero. Please try a non-zero amount.');
         }
@@ -66,7 +67,7 @@ const ethereum = {
             !overrideBalanceCheck &&
             (!balance ||
                 new BN(balance.toString()).lt(
-                    new BN(ethers.utils.parseUnits(amount).toString()).add(
+                    new BN(ethers.parseUnits(amount).toString()).add(
                         new BN(gasPrice).mul(new BN(gasLimit.toString())),
                     ),
                 ))
@@ -86,7 +87,7 @@ const ethereum = {
         const baseTx = {
             to,
             nonce,
-            data: [],
+            data: '0x',
             value,
             gasLimit,
             gasPrice,
@@ -104,7 +105,7 @@ const ethereum = {
         const provider = getSepoliaProvider();
         const nonce = await provider.getTransactionCount(address);
 
-        const contractAddress = ethers.utils.getContractAddress({
+        const contractAddress = ethers.getCreateAddress({
             from: address,
             nonce,
         });
@@ -199,9 +200,7 @@ const ethereum = {
         const { chainId, getBalance, explorer, currency } = ethereum;
 
         // create hash of unsigned TX to sign -> payload
-        const unsignedTx = ethers.utils.serializeTransaction(baseTx);
-        const txHash = ethers.utils.keccak256(unsignedTx);
-        const payload = Object.values(ethers.utils.arrayify(txHash));
+        const { unsignedTx, payload } = prepareLegacyTransaction(baseTx);
 
         // get signature from MPC contract
         let sig;
@@ -216,27 +215,13 @@ const ethereum = {
         sig.s = '0x' + sig.s.toString('hex');
         // console.log('sig', sig);
 
-        // check 2 values for v (y-parity) and recover the same ethereum address from the generateAddress call (in app.ts)
-        let addressRecovered = false;
-        for (let v = 0; v < 2; v++) {
-            sig.v = v + chainId * 2 + 35;
-            const recoveredAddress = ethers.utils.recoverAddress(payload, sig);
-            if (recoveredAddress.toLowerCase() === address.toLowerCase()) {
-                addressRecovered = true;
-                break;
-            }
-        }
-        if (!addressRecovered) {
-            return console.log(
-                'signature failed to recover correct sending address',
-            );
-        }
+        const signedTransaction = finalizeLegacyTransaction(baseTx, address, sig);
 
         // broadcast TX - signature now has correct { r, s, v }
         try {
             const hash = await getSepoliaProvider().send(
                 'eth_sendRawTransaction',
-                [ethers.utils.serializeTransaction(baseTx, sig)],
+                [signedTransaction],
             );
             console.log('tx hash', hash);
             console.log('explorer link', `${explorer}/tx/${hash}`);
@@ -245,7 +230,7 @@ const ethereum = {
                 const balance = await getBalance({ address });
                 console.log(
                     'balance',
-                    ethers.utils.formatUnits(balance),
+                    ethers.formatUnits(balance),
                     currency,
                 );
             }, 60000);
@@ -267,7 +252,7 @@ const encodeData = ({ method, args, ret }) => {
             ',',
         )})`,
     ];
-    const iface = new ethers.utils.Interface(abi);
+    const iface = new ethers.Interface(abi);
     const allArgs = [];
     const argValues = Object.values(args);
     for (let i = 0; i < argValues.length; i++) {
@@ -283,7 +268,7 @@ const encodeData = ({ method, args, ret }) => {
 };
 
 const getSepoliaProvider = () => {
-    return new ethers.providers.JsonRpcProvider(
+    return new ethers.JsonRpcProvider(
         'https://ethereum-sepolia.publicnode.com',
     );
 };

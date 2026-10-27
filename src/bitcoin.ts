@@ -153,7 +153,7 @@ const bitcoin = {
             publicKey: Buffer.from(publicKey, 'hex'),
             sign: async (transactionHash) => {
                 const payload = Object.values(
-                    ethers.utils.arrayify(transactionHash),
+                    ethers.getBytes(transactionHash),
                 );
                 const sig: any = await sign(payload, process.env.MPC_PATH);
                 if (!sig) return;

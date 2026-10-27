@@ -76,3 +76,44 @@ impl Contract {
             })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use near_sdk::{test_utils::VMContextBuilder, testing_env};
+
+    fn context(predecessor: &str, deposit: NearToken) {
+        let mut builder = VMContextBuilder::new();
+        builder
+            .current_account_id("proxy.testnet".parse().unwrap())
+            .predecessor_account_id(predecessor.parse().unwrap())
+            .attached_deposit(deposit);
+        testing_env!(builder.build());
+    }
+
+    #[test]
+    #[should_panic(expected = "only contract owner can sign arbitrary EVM transactions")]
+    fn arbitrary_payload_requires_contract_owner() {
+        context("caller.testnet", COST);
+        let _ = Contract::default().sign("00".into(), "ethereum-1".into(), 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "pay the piper")]
+    fn public_payload_requires_payment() {
+        context("caller.testnet", NearToken::from_yoctonear(0));
+        let _ = Contract::default().sign(
+            PUBLIC_RLP_ENCODED_METHOD_NAMES[0].into(),
+            "ethereum-1".into(),
+            0,
+        );
+    }
+
+    #[test]
+    fn owner_can_request_signature_without_payment() {
+        context("proxy.testnet", NearToken::from_yoctonear(0));
+        let promise = Contract::default().sign("00".into(), "ethereum-1".into(), 0);
+        drop(promise);
+        assert_eq!(near_sdk::test_utils::get_created_receipts().len(), 1);
+    }
+}

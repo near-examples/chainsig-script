@@ -1,3 +1,5 @@
+> Requires Node.js 22.22.2+ and Rust 1.97.1 for the optional proxy contract. `NEAR_RPC_URL` overrides the testnet RPC.
+
 # Overview
 
 ### ⚠️⚠️⚠️ Caution! This is beta / testnet technology ⚠️⚠️⚠️
@@ -27,7 +29,7 @@ The creation of secp256k1 public keys and addresses for Bitcoin (like) and EVM c
 
 # Installation
 
-`yarn`
+`npm ci`
 
 ### CREATE .env FILE in root of project
 
@@ -71,7 +73,7 @@ near view v1.signer-prod.testnet public_key
 
 # Prebuilt Commands
 
-`yarn start [commands]`
+`npm start -- [commands]`
 
 ### Command List
 
@@ -96,7 +98,7 @@ near view v1.signer-prod.testnet public_key
 
 # EVM Contract Deployment and Interactions (advanced)
 
-Usage: `yarn start [commands]`
+Usage: `npm start -- [commands]`
 
 ### Command List
 
@@ -136,20 +138,20 @@ After setting up all your environment variables ensure that your EVM account is 
 The default network is Sepolia and given the MPC_PATH environment variable, you will receive a unique derived EVM address using the following command:
 
 ```
-yarn start -ea
+npm start -- -ea
 ```
 
 Fund this account before getting started to ensure it has enough gas to deploy an NFT contract and mint a few NFTs.
 
 Start by deploying a new NFT contract:
 
-1. `yarn start -d`
+1. `npm start -- -d`
 
 Check explorer link and make sure contract is deployed successfully.
 
 Take your contract address from console result and call:
 
-2. `yarn start -c --to 0x[CONTRACT ADDRESS FROM STEP 1]`
+2. `npm start -- -c --to 0x[CONTRACT ADDRESS FROM STEP 1]`
 
 This will mint a token to default address `0x525521d79134822a342d330bd91da67976569af1`.
 
@@ -157,7 +159,7 @@ To mint a token to a different address use `--args '{"address":"0x[SOME_OTHER_AD
 
 View the balance of the **default address** using:
 
-3. `yarn start -v --to 0x[CONTRACT ADDRESS FROM STEP 1]`
+3. `npm start -- -v --to 0x[CONTRACT ADDRESS FROM STEP 1]`
 
 Which should output `1` the NFT balance of default address `0x525521d79134822a342d330bd91da67976569af1`
 
@@ -196,17 +198,16 @@ The NEAR contract acts as a gatekeeper for the derived EVM account (or accounts)
 
 ### Deploy the NEAR contract using `cargo-near`.
 
-Install `cargo-near` and `near-cli`
+Install `cargo-near` and `near-cli-rs`
 
 -   [cargo-near](https://github.com/near/cargo-near) - NEAR smart contract development toolkit for Rust
 -   [near CLI-rs](https://near.cli.rs) - Iteract with NEAR blockchain from command line
 
 ```
-cargo build
-
-cargo near create-dev-account
-
-cargo near deploy [ACCOUNT_ID]
+cd near_contracts
+cargo near build non-reproducible-wasm
+near account create-account sponsor-by-faucet-service <account-id>
+cargo near deploy build-non-reproducible-wasm <account-id>
 ```
 
 ### Set the following `.env` vars accordingly:
@@ -255,7 +256,7 @@ NEAR_PROXY_ACCOUNT_ID="..."
 NEAR_PROXY_PRIVATE_KEY="ed25519:..."
 ```
 
-2. Call `yarn start -etx` you are now deriving an Ethereum address using the NEAR account ID of the NEAR Proxy Contract, not your NEAR account ID
+2. Call `npm start -- -etx` you are now deriving an Ethereum address using the NEAR account ID of the NEAR Proxy Contract, not your NEAR account ID
 
 _NOTE: This Ethereum address is different and unfunded. So, this transaction will not work._
 
@@ -272,7 +273,7 @@ NEAR_PROXY_CONTRACT="false"
 
 Send ETH to your new derived Ethereum address:
 
-`yarn start -etx --to 0x[ADDRESS FROM STEP 2] --amount [AMOUNT IN ETH e.g. 0.1]`
+`npm start -- -etx --to 0x[ADDRESS FROM STEP 2] --amount [AMOUNT IN ETH e.g. 0.1]`
 
 Don't forget to change these back!
 
@@ -347,3 +348,7 @@ TBD
 [Oraichain LCD](https://lcd.orai.io)
 
 [Oraichain mainnet Faucet](https://stakely.io/faucet/oraichain-orai)
+
+## Local validation
+
+Run `npm run check` and `npm run build` to compile without sending transactions. The CLI reads account credentials from `.env`; use a testnet account for the signing demos.

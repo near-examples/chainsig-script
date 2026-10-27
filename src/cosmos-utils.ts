@@ -13,7 +13,7 @@ import {
     makeSignDoc as makeSignDocDirect,
 } from '@cosmjs/proto-signing';
 import { makeSignDoc, StdSignDoc, StdSignature } from '@cosmjs/amino';
-import { COSMOS_CHAIN_IDS, ORAI, toAmount } from '@oraichain/common';
+import { COSMOS_CHAIN_IDS, ORAI, toAmount } from './cosmos-config';
 import { SignDoc, TxRaw } from 'cosmjs-types/cosmos/tx/v1beta1/tx';
 import { MsgSend } from 'cosmjs-types/cosmos/bank/v1beta1/tx';
 import { fromBase64, toHex } from '@cosmjs/encoding';
@@ -26,7 +26,8 @@ import {
     ExecuteInstruction,
     wasmTypes,
 } from '@cosmjs/cosmwasm-stargate';
-import { getEncodedExecuteContractMsgs } from '@oraichain/oraidex-common';
+import { MsgExecuteContract } from 'cosmjs-types/cosmwasm/wasm/v1/tx';
+import { toUtf8 } from '@cosmjs/encoding';
 
 export type PubkeyType =
     | '/ethermint.crypto.v1.ethsecp256k1.PubKey' // for ethermint txs
@@ -70,9 +71,9 @@ export class CosmosUtils {
         const msgToSign = '0x' + toHex(signDocBytes);
         const msgHash =
             this.pubkeyType === '/cosmos.crypto.secp256k1.PubKey'
-                ? ethers.utils.sha256(msgToSign)
-                : ethers.utils.keccak256(msgToSign);
-        const payload = Object.values(ethers.utils.arrayify(msgHash));
+                ? ethers.sha256(msgToSign)
+                : ethers.keccak256(msgToSign);
+        const payload = Object.values(ethers.getBytes(msgHash));
         return { msgHash, payload };
     }
 
@@ -102,10 +103,15 @@ export class CosmosUtils {
     }
 
     async builMsgExecuteStdSignDoc(instructions: ExecuteInstruction[]) {
-        const encodeObjects = getEncodedExecuteContractMsgs(
-            this.senderAddress,
-            instructions,
-        );
+        const encodeObjects = instructions.map(({ contractAddress, msg, funds = [] }) => ({
+            typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
+            value: MsgExecuteContract.fromPartial({
+                sender: this.senderAddress,
+                contract: contractAddress,
+                msg: toUtf8(JSON.stringify(msg)),
+                funds: [...funds],
+            }),
+        }));
         // FIXME: use a better way to query account. Can use RPC but need to patch because the account pubkey type does not match
         const account = await this.getAccount();
         return this.buildSimpleStdSignDoc(

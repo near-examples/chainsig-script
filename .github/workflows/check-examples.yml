@@ -1,0 +1,43 @@
+name: Check examples
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  javascript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: node dist/app.js --help
+
+  proxy-contract:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: near_contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.1
+          targets: wasm32-unknown-unknown
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: near_contracts
+      - run: cargo fmt --check
+      - run: cargo test --locked --lib
+      - run: cargo build --locked --target wasm32-unknown-unknown --release

@@ -1,6 +1,6 @@
 import { program } from 'commander';
 import { compressPublicKey, generateAddress } from './kdf';
-import { sign, account } from './near';
+import { sign, provider } from './near';
 import dogecoin from './dogecoin';
 import ethereum from './ethereum';
 import bitcoin from './bitcoin';
@@ -8,7 +8,7 @@ import xrpLedger from './xrpLedger';
 import dotenv from 'dotenv';
 import oraichain from './cosmos';
 import oraichainEthermint from './cosmos-ethermint';
-import { ORAI } from '@oraichain/common';
+import { ORAI } from './cosmos-config';
 dotenv.config();
 
 program
@@ -110,9 +110,10 @@ export const genAddress = (chain, bech32Prefix = ORAI) => {
 async function main() {
     // mpc public key
     if (p) {
-        const public_key = await account.viewFunction({
+        const public_key = await provider.callFunction({
             contractId: MPC_CONTRACT_ID,
-            methodName: 'public_key',
+            method: 'public_key',
+            args: {},
         });
         console.log(public_key);
     }

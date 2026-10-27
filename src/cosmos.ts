@@ -7,7 +7,7 @@ import {
     serializeSignDoc,
     StdSignDoc,
 } from '@cosmjs/amino';
-import { COSMOS_CHAIN_IDS, ORAI, toAmount } from '@oraichain/common';
+import { COSMOS_CHAIN_IDS, ORAI, toAmount } from './cosmos-config';
 import { SignDoc } from 'cosmjs-types/cosmos/tx/v1beta1/tx';
 import { compressPublicKey } from './kdf';
 import { CosmosUtils } from './cosmos-utils';
@@ -118,7 +118,7 @@ const oraichain = {
         sigCopy.r = '0x' + sigTyped.r.toString('hex');
         sigCopy.s = '0x' + sigTyped.s.toString('hex');
 
-        const recoverPublicKey = ethers.utils.recoverPublicKey(
+        const recoverPublicKey = ethers.SigningKey.recoverPublicKey(
             msgHash,
             sigCopy,
         );

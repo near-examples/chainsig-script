@@ -82,7 +82,7 @@ const xrpLedger = {
             Buffer.from(encodedForSigning, 'hex'),
         );
         const hash = new Uint8Array(hashUnsigned.slice(0, 32));
-        const payload = Object.values(ethers.utils.arrayify(hash));
+        const payload = Object.values(ethers.getBytes(hash));
         const sig: any = await sign(payload, process.env.MPC_PATH);
         const sigBuffer = {
             r: new BN(Buffer.from(sig.r, 'hex')),
